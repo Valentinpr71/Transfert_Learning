@@ -55,7 +55,6 @@ if __name__ == "__main__":
 
     # --- Parse parameters ---
     parameters = process_args(sys.argv[1:], Defaults)
-    print('Parameters epochs', parameters.epochs)
     if parameters.deterministic:
         rng = np.random.RandomState(123456)
     else:

@@ -21,9 +21,9 @@ class microgrid_control(Environment):
         self.last_ponctual_observation=[0.,0.,0.]
         self._input_dimensions = [(1,),(1,),(1,)] #Pas d'historique donc seul l'état courant est bservé (pour le 1) et 3 entrées : SOC, cons et prod.
         # Get consumption profile in [0,1]
-        self.consumption_train_norm=np.load("../data/example_nondeterminist_cons_train.npy")[0:1*365*24]
+        self.consumption_train_norm=np.load("./data/example_nondeterminist_cons_train.npy")[0:1*365*24]
         #self.consumption_valid_norm=np.load("../../data/example_nondeterminist_cons_train.npy")[365*24:2*365*24]
-        self.consumption_test_norm=np.load("../data/example_nondeterminist_cons_test.npy")[0:1*365*24]
+        self.consumption_test_norm=np.load("./data/example_nondeterminist_cons_test.npy")[0:1*365*24]
         # Scale consumption profile in [0,2.1kW] --> average max per day = 1.7kW, average per day is 18.3kWh
         self.consumption_train=self.consumption_train_norm*2.1
         #self.consumption_valid=self.consumption_valid_norm*2.1
@@ -33,9 +33,9 @@ class microgrid_control(Environment):
 
 
         #Données de production
-        self.production_train_norm=np.load("../data/BelgiumPV_prod_train.npy")[0:1*365*24]
+        self.production_train_norm=np.load("./data/BelgiumPV_prod_train.npy")[0:1*365*24]
         #self.production_valid_norm=np.load("../../data/BelgiumPV_prod_train.npy")[365*24:2*365*24] #determinist best is 110, "nondeterminist" is 124.9
-        self.production_test_norm=np.load("../data/BelgiumPV_prod_test.npy")[0:1*365*24] #determinist best is 76, "nondeterminist" is 75.2
+        self.production_test_norm=np.load("./data/BelgiumPV_prod_test.npy")[0:1*365*24] #determinist best is 76, "nondeterminist" is 75.2
         # Scale production profile : 12KWp (60m^2) et en kWh
         self.production_train=self.production_train_norm*12000./1000.
         #self.production_valid=self.production_valid_norm*12000./1000.
@@ -94,7 +94,6 @@ class microgrid_control(Environment):
         self._last_ponctual_observation[2]=self.production_norm[self.counter]
 
         self.counter+=1
-        print(copy.copy(reward))
         return copy.copy(reward)
 
     def reset(self, mode=-1):

@@ -147,7 +147,7 @@ class microgrid_control_gym(gym.Env):
 
         # if self.num_episode-self.max_episode==0.:
         #     self.render_to_file()
-        print('on est dans step')
+
         return copy.copy(obs), copy.copy(reward), is_done, info
 
 
