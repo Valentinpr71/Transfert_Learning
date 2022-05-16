@@ -10,7 +10,7 @@ from render.testplot2 import Test_plot
 
 class microgrid_control_gym_test(gym.Env):
     metadata = {'render.modes': ['human']}
-    def __init__(self, data='test', plot_every=10, ppc=None, sell_to_grid=True,hydrogene_storage_penalty=False, total_timesteps=8760*10,month=[]):#,month=[9,10,11,12,1,2]):
+    def __init__(self, plot_every=10, ppc=None, sell_to_grid=True, total_timesteps=8760*10,month=[]):#,month=[9,10,11,12,1,2]):
         self.len_episode = 8760
         self.month=month
         self.max_episode=total_timesteps/self.len_episode
@@ -22,8 +22,6 @@ class microgrid_control_gym_test(gym.Env):
         else:
             self.ppc_power_constraint=0
             print("no sell to grid, proof : "+str(self.sell_to_grid))
-        self.hydrogen_storage_penalty=hydrogene_storage_penalty
-        self.data=data
         #self._last_ponctual_observation = [1.,0.,0.]
         #Action space:
         self.action_space = spaces.Discrete(3)
@@ -40,7 +38,7 @@ class microgrid_control_gym_test(gym.Env):
         ab['b']=b
         self.dist_equinox=ab.abs().min(axis=1)
         #Consumption
-        import_data = Import_data(mode=self.data)
+        import_data = Import_data(mode="test")
         self.consumption_norm=import_data._consumption_norm()
         self.consumption = import_data.consumption()
         self.production_norm= import_data._production_norm()
@@ -111,10 +109,7 @@ class microgrid_control_gym_test(gym.Env):
             true_energy_avail_from_hydrogen=self.hydrogen_max_power
             diff_hydrogen=self.hydrogen_max_power*self.hydrogen_elec_eta
 
-        # Une récompense est donnée
-        if self.hydrogen_storage_penalty:
-            reward = -diff_hydrogen * 0.1  # 0.1euro/kWh of hydrogen stored when stored, the opposite if taken out of storage
-        # la récompense est négative si l'on pompe dans la réserve de H2, positive si on recharge, nulle sinon
+
 
 
         Energy_needed_from_battery = true_demand + true_energy_avail_from_hydrogen
