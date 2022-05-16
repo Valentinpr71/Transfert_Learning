@@ -4,6 +4,7 @@ parser.add_argument("--hydrogene_storage_penality", help="activate rewards (or p
 parser.add_argument("--sell_to_grid", help="activate selling transition with main grid", const=True, nargs='?', default=False)
 parser.add_argument("--ppc", help="PPC maximum constraint, can be a number or None if you don't want limits", const=1.5, nargs='?', default=None)
 #parser.add_argument("--env", help = "The environment to import, can be by default microgrid_control_gymenv2 or if called microgrid_control_gymenv2_excess", const='excess',nargs='?',default=None)
+parser.add_argument("--dim", help="Dimension of the PV arrays and Battery Capacity", const=[12.,15.],nargs='?',default=[12.,15.])
 args = parser.parse_args()
 print(args)
 
@@ -87,6 +88,7 @@ if __name__=="__main__":
     if args.sell_to_grid:
         sell_grid = " Excess energy goes to main grid "
 
+    dim = [int(item) for item in args.dim.split(',')]
 
     fname=hydrogene_storage_penality+ppc+sell_grid
     # Create unique log dir
@@ -97,7 +99,7 @@ if __name__=="__main__":
     len_episode=8760
     num_episode=100
 
-    env=gym.make("microgrid:MicrogridControlGym-v0")
+    env=gym.make("microgrid:MicrogridControlGym-v0",dim=dim)
 
     #env=microgrid_control_gym(data="train", hydrogene_storage_penalty=args.hydrogene_storage_penality, ppc=args.ppc, sell_to_grid=args.sell_to_grid, total_timesteps=len_episode*num_episode)
 

@@ -11,7 +11,8 @@ from render.testplot2 import Test_plot
 
 class microgrid_control_gym(gym.Env):
     metadata = {'render.modes': ['human']}
-    def __init__(self, plot_every=10, ppc=None, sell_to_grid=False, total_timesteps=8760*10,month=[]):#,month=[9,10,11,12,1,2]):
+    def __init__(self, plot_every=10, ppc=None, sell_to_grid=False, total_timesteps=8760*10,month=[],dim=[12.,15.]):#,month=[9,10,11,12,1,2]):
+        print("dim : ", dim)
         self.len_episode = 8760
         self.month=month
         self.max_episode=total_timesteps/self.len_episode
@@ -40,7 +41,7 @@ class microgrid_control_gym(gym.Env):
         ab['b']=b
         self.dist_equinox=ab.abs().min(axis=1)
         #Consumption
-        import_data = Import_data(mode="train")
+        import_data = Import_data(mode="train", PV=dim[0])
         self.consumption_norm=import_data._consumption_norm()
         self.consumption = import_data.consumption()
         self.production_norm= import_data._production_norm()
@@ -71,7 +72,7 @@ class microgrid_control_gym(gym.Env):
 
 
         #Dimensionnement des batteries court et long terme
-        self.battery_size = 15.
+        self.battery_size = dim[1]
         self.battery_eta = 0.9
 
         self.hydrogen_max_power = 1.1
