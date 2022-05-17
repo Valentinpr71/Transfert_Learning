@@ -14,6 +14,8 @@ import numpy as np
 import sys
 import os
 import time
+import json
+import hashlib
 
 # if args.env!=None:
 #     from envs.microgrid_control_gymenv2_excess import microgrid_control_gym
@@ -97,7 +99,7 @@ if __name__=="__main__":
     os.makedirs(log_dir, exist_ok=True)
 
     len_episode=8760
-    num_episode=100
+    num_episode=5
 
     env=gym.make("microgrid:MicrogridControlGym-v0",dim=dim)
 
@@ -120,7 +122,12 @@ if __name__=="__main__":
     # Helper from the library
     results_plotter.plot_results([log_dir], len_episode*num_episode, results_plotter.X_TIMESTEPS, "DQN Microgrid Control")
     # plt.show()
-    model.save("deepq_microgrid_control")
+
+    #On génère un hash key qui correspond au dimensionnement:
+    dim=json.dumps(dim,sort_keys=True).encode('utf-8')
+    crypted_name=hashlib.md5(dim).hexdigest()
+
+    model.save("Result/"+crypted_name)
     plot_results(log_dir,fname=fname)
 
 
