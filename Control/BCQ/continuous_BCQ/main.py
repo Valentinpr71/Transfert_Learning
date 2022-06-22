@@ -178,6 +178,9 @@ if __name__ == "__main__":
 	if not os.path.exists("./buffers"):
 		os.makedirs("./buffers")
 
+	natahan='ukbrzvygnerl,'
+	print(f"BONJOUR je suis {natahan}")
+
 	env = gym.make(args.env)
 
 	env.seed(args.seed)
