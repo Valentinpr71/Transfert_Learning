@@ -40,8 +40,8 @@ def rule_based_actions(dim):
             PH2_dech=(max(PH2_max,0)/PH2_max)*(min(E_H2-E_H2_min,PH2_max*(1/eta_PAC))); #Puissance de décharge en tenant compte de l'énergie stockée
             PH2_charg=(min(PH2_max,0)/PH2_max)*(max(E_H2-E_H2_max,PH2_max)); #Puissance de charge (négative)
             #print(PH2_charg+PH2_dech, Delta)
-            print(PH2_charg,Delta, PH2_dech, PH2_dech*eta_PAC)
-            action[i]=((PH2_dech+PH2_charg)<0.005)*2+((abs(PH2_dech+PH2_charg)<0.005));
+            #print(PH2_charg,Delta, PH2_dech, PH2_dech*eta_PAC)
+            action[i]=((PH2_dech+PH2_charg)<-0.005)*2+((abs(PH2_dech+PH2_charg)<0.005)); # Action 0 = décharger, action 1 = Rien, action 2 = charger
             E_H2=E_H2-PH2_dech-PH2_charg*eta_H2;
             indicateur_panne[i]=(PH2_dech<Delta)*(Delta-(eta_PAC*PH2_dech)); # l'indicateur utilisé est l'énergie en déficit dans le système
     ##Il faut retoucher le programme pour qu'il soit plus proche de microgridenv: Selon le signe du premier delta, on charge ou on décharge H2 à puissance max (peut importe combien on doit charger ou décharger). Puis la batterie équilibre le reste.

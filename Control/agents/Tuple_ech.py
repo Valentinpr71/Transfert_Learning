@@ -1,6 +1,7 @@
 import gym
 import pandas as pd
 import numpy as np
+from buffer_tools.rule_based import rule_based_actions
 
 class Interact():
     """"
@@ -12,14 +13,14 @@ class Interact():
         self.log=log
         self.agent=agent
         self.buffer_size=buffer_size
-        self.frac_rule=None
-        self.frac_random=None
-        self.frac_pretrain=None
+        self._get_frac()
         self.len_episode=8760
     def _Action_rule_based(self):
+        duplication=int(self.buffer_size*self.frac_rule)
+        Action_rule_based=pd.concat([pd.DataFrame(rule_based_actions(self.dim))]*duplication,axis=1,ignore_index=True)
         return(Action_rule_based)
     def _Action_random(self):
-        Action_random=pd.DataFrame(np.random.randint(3,size=(8760, int(self.buffer_size*self.frac_random))))
+        Action_random=pd.DataFrame(np.random.randint(3,size=(8759, int(self.buffer_size*self.frac_random))))
         return(Action_random)
     def _get_frac(self):
         if self.log==1:
@@ -52,4 +53,4 @@ class Interact():
                 rewards_random[j][i] = reward
                 states_random[j][i] = state
         tuples_random={'state':states_random,'action':actions_random,'reward':rewards_random}
-        return tuples_random
+        self.tuples_random=tuples_random
