@@ -32,7 +32,7 @@ class Interact():
             self.frac_pretrain=0.3
         else:
             return("ERROR log argument not in range")
-    def _get_tuples_random(self):
+    def get_tuples_random(self):
         Action_random=self._Action_random()
         env = gym.make("microgrid:MicrogridControlGym-v0", dim=self.dim)
         rewards_random={}
@@ -51,4 +51,5 @@ class Interact():
                 actions_random[j][i] = Action_random[j][i]
                 rewards_random[j][i] = reward
                 states_random[j][i] = state
-        tuples_random={state}
+        tuples_random={'state':states_random,'action':actions_random,'reward':rewards_random}
+        return tuples_random
