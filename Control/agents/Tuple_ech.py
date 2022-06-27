@@ -35,6 +35,7 @@ class Interact():
             return("ERROR log argument not in range")
     def get_tuples_random(self):
         Action_random=self._Action_random()
+        print('len de Action_random : ', len(Action_random))
         env = gym.make("microgrid:MicrogridControlGym-v0", dim=self.dim)
         rewards_random={}
         states_random={}
@@ -49,8 +50,31 @@ class Interact():
             while not is_done:
                 state, reward, is_done, info = env.step(Action_random[j][i])
                 i += 1
-                actions_random[j][i] = Action_random[j][i]
+                actions_random[j][i-1] = Action_random[j][i-1]
                 rewards_random[j][i] = reward
                 states_random[j][i] = state
         tuples_random={'state':states_random,'action':actions_random,'reward':rewards_random}
+        self.tuples_random=tuples_random
+
+    def get_tuples_rule(self):
+        Action_rule_based=self._Action_rule_based()
+        print('len de Action_rule_based : ', len(Action_rule_based))
+        env = gym.make("microgrid:MicrogridControlGym-v0", dim=self.dim)
+        rewards_rule={}
+        states_rule={}
+        actions_rule={}
+        for j in range(len(Action_rule_based.columns.value_counts())):
+            i=0
+            state_ini = env.reset()
+            is_done = False
+            rewards_rule[j]={0:0}
+            states_rule[j]={0:state_ini}
+            actions_rule[j]={0:Action_rule_based[j][0]}
+            while not is_done:
+                state, reward, is_done, info = env.step(Action_rule_based[j][i])
+                i += 1
+                actions_rule[j][i-1] = Action_rule_based[j][i-1]
+                rewards_rule[j][i] = reward
+                states_rule[j][i] = state
+        tuples_random={'state':states_rule,'action':actions_rule,'reward':rewards_rule}
         self.tuples_random=tuples_random

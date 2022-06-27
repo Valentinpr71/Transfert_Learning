@@ -26,7 +26,7 @@ def rule_based_actions(dim):
     E_H2=100; #Stockage H2 de départ
     P_nominal_H2 = 1.1;  # Puissance H2
     P_nominal_batt = Ebatt_max - Ebatt_min;  # Puissance batterie (C1)
-    for i in range(1,len(prod)):
+    for i in range(len(prod)):
         Pbatt=cons['Valeurs'][i]-(Dim_PV*prod['Valeurs'][i]/12.); #Demande nette, cette valeur est négative si la production dépasse la conso, positive sinon
         Pbatt_max=(max(Pbatt,0)/Pbatt)*min(P_nominal_batt*eta_batt,Pbatt)+(min(Pbatt,0)/Pbatt)*max(-P_nominal_batt*eta_batt,Pbatt);# (Dé)Charge de la batterie, on la limite si la puissance demandée est plus faible que la puissance nominale
         P_dech=(max(Pbatt_max,0)/Pbatt_max)*(min(SOC*Dim_batt-Ebatt_min,Pbatt_max*(1/eta_batt))); #Puissance de décharge en tenant compte du SOC.On prend 1/eta pour intégrer le rendement de décharge tout en atteigannt le Delta demandé: On est obligé de déchargé eta fois plus de puissance que demandé
