@@ -7,6 +7,7 @@ class Interact():
     """"
     cette classe permet à la fois d'obtenir les tuples d'actions liées aux politiques de contrôle comportementales, qu'elles soient random, basées sur des règles. Puis
     de les utiliser afin de générer les tuples (s_t,a_t,r_t,s_t+1) qui alimenteront le buffer.
+    Pour l'argument de l'agent pré-entraîné, on attend un dictionnaire comprenant le nom des fichiers à récupérer.
     """
     def __init__(self, dim, agent, log,buffer_size):
         self.dim = dim
@@ -44,14 +45,14 @@ class Interact():
             i=0
             state_ini = env.reset()
             is_done = False
-            rewards_random[j]={0:0}
+            rewards_random[j]={}
             states_random[j]={0:state_ini}
             actions_random[j]={0:Action_random[j][0]}
             while not is_done:
                 state, reward, is_done, info = env.step(Action_random[j][i])
                 i += 1
                 actions_random[j][i-1] = Action_random[j][i-1]
-                rewards_random[j][i] = reward
+                rewards_random[j][i-1] = reward
                 states_random[j][i] = state
         tuples_random={'state':states_random,'action':actions_random,'reward':rewards_random}
         self.tuples_random=tuples_random
@@ -67,14 +68,14 @@ class Interact():
             i=0
             state_ini = env.reset()
             is_done = False
-            rewards_rule[j]={0:0}
+            rewards_rule[j]={}
             states_rule[j]={0:state_ini}
             actions_rule[j]={0:Action_rule_based[j][0]}
             while not is_done:
                 state, reward, is_done, info = env.step(Action_rule_based[j][i])
                 i += 1
                 actions_rule[j][i-1] = Action_rule_based[j][i-1]
-                rewards_rule[j][i] = reward
+                rewards_rule[j][i-1] = reward
                 states_rule[j][i] = state
         tuples_random={'state':states_rule,'action':actions_rule,'reward':rewards_rule}
         self.tuples_random=tuples_random
