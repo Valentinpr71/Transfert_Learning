@@ -1,16 +1,17 @@
 import argparse
+import numpy as np
 parser = argparse.ArgumentParser(description='Agent qui interagit en DQN')
 parser.add_argument("--hydrogene_storage_penality", help="activate rewards (or penalities) linked to hydrogene storage", const=True, nargs='?', default=False)
 parser.add_argument("--sell_to_grid", help="activate selling transition with main grid", const=True, nargs='?', default=False)
 parser.add_argument("--ppc", help="PPC maximum constraint, can be a number or None if you don't want limits", const=1.5, nargs='?', default=None)
 #parser.add_argument("--env", help = "The environment to import, can be by default microgrid_control_gymenv2 or if called microgrid_control_gymenv2_excess", const='excess',nargs='?',default=None)
-parser.add_argument("--dim", help="Dimension of the PV arrays and Battery Capacity", const=[12.,15.],nargs='?',default=[12.,15.])
+parser.add_argument("--dim", help="Dimension of the PV arrays and Battery Capacity", const=np.array(12.,15.),nargs='?',default=np.array(12.,15.))
 args = parser.parse_args()
 print(args)
 
 import gym
 import matplotlib.pyplot as plt
-import numpy as np
+
 import sys
 import os
 import time

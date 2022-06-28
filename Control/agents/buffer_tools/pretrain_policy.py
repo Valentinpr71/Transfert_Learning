@@ -9,7 +9,7 @@ class Pretrain():
     Cette classe récupère les modèles entraînés demandés et génères des actions dans l'environnement spécifié. C'est un outil pour la classe Tuple_ech.
     Classe à changer si le modèle change de DQN.
     Arguments :
-    - agent : dictionnaire numéroté contenant le nom des fichiers contenant les agents entraînés
+    - agent : dictionnaire numéroté contenant le nom des fichiers contenant les agents entraînés. AUTRE MANIÈRE plus intéressante: la clé est le hashkey et la valeur le dimensionnement. le dimensionnement doit être un np.array
     - dim : dimension de l'environnement sur lequel les predictions doivent être faites. De la forme d'une liste de flottants
     """
     def __init__(self,agent, dim):
