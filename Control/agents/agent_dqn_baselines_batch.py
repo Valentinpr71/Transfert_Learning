@@ -1,16 +1,17 @@
 import argparse
+import numpy as np
 parser = argparse.ArgumentParser(description='Agent qui interagit en DQN')
 parser.add_argument("--hydrogene_storage_penality", help="activate rewards (or penalities) linked to hydrogene storage", const=True, nargs='?', default=False)
 parser.add_argument("--sell_to_grid", help="activate selling transition with main grid", const=True, nargs='?', default=False)
 parser.add_argument("--ppc", help="PPC maximum constraint, can be a number or None if you don't want limits", const=1.5, nargs='?', default=None)
 #parser.add_argument("--env", help = "The environment to import, can be by default microgrid_control_gymenv2 or if called microgrid_control_gymenv2_excess", const='excess',nargs='?',default=None)
-parser.add_argument("--dim", help="Dimension of the PV arrays and Battery Capacity", const=[12.,15.],nargs='?',default=[12.,15.])
+parser.add_argument("--dim", help="Dimension of the PV arrays and Battery Capacity", const=np.array(12.,15.),nargs='?',default=np.array(12.,15.))
 args = parser.parse_args()
 print(args)
 
 import gym
 import matplotlib.pyplot as plt
-import numpy as np
+
 import sys
 import os
 import time
@@ -28,6 +29,8 @@ from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines.bench import Monitor
 from stable_baselines.results_plotter import load_results, ts2xy
 from Callbacks.SavingBestRewards import SaveOnBestTrainingRewardCallback
+from .Tuple_ech import Interact
+from .buffer_tools.hash_manager import Dim_manager
 from stable_baselines.deepq.policies import FeedForwardPolicy
 
 
@@ -78,7 +81,9 @@ class CustomDQNPolicy(MlpPolicy):
 
 
 if __name__=="__main__":
-
+    distance_euclidienne=4
+    dim_num_iteration=50
+    dim_boundaries={'PV':{'low':0,'high':12},'batt':{'low':0,'high':15}}
     hydrogene_storage_penality = ""
     ppc = ""
     sell_grid = ""
@@ -89,26 +94,40 @@ if __name__=="__main__":
     if args.sell_to_grid:
         sell_grid = " Excess energy goes to main grid "
 
-    dim = [int(item) for item in args.dim.split(',')]
-
-    fname=hydrogene_storage_penality+ppc+sell_grid
-    # Create unique log dir
-    log_dir = "tmp/gym/{}".format(int(time.time()))
-
-    os.makedirs(log_dir, exist_ok=True)
-
     len_episode=8760
-    num_episode=5
+    num_episode=40
+    #dim = [int(item) for item in args.dim.split(',')]
+    manager = Dim_manager(distance=distance_euclidienne)
+    for i in range(dim_num_iteration):
+        dim=np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))])
+        manager._dim(dim.tolist())
+        if manager.add_to_dicto():
+            env = gym.make("microgrid:MicrogridControlGym-v0", dim=dim)
+            fname = hydrogene_storage_penality + ppc + sell_grid + str(dim)
+            # Create unique log dir
+            log_dir = "Batch_RL_results".format(int(time.time()))
+            os.makedirs(log_dir, exist_ok=True)
+            #Maintenant deux possibilités: Soit l'agent a à disposition des autres agents déjà entraînés et il peut constituer un batch, soit non et on va l'entraîner en on-line off-policy.
+            if len(manager.choose_parents())<2:#Pas assez de parents, on entraîne
+                env = Monitor(env, log_dir, allow_early_resets=False)
+                env = DummyVecEnv([lambda: env])
+                callback = SaveOnBestTrainingRewardCallback(check_freq=len_episode, log_dir=log_dir)
+                model = DQN(CustomDQNPolicy, env, verbose=1, exploration_final_eps=0.01, exploration_fraction=0.3,
+                            target_network_update_freq=1095, buffer_size=1000000, batch_size=264, learning_rate=0.02,
+                            double_q=True)
+                model.learn(total_timesteps=len_episode * num_episode, callback=callback)
+                manager.save_model(model)
+            else:
+                
 
-    env=gym.make("microgrid:MicrogridControlGym-v0",dim=dim)
+
+
+
 
     #env=microgrid_control_gym(data="train", hydrogene_storage_penalty=args.hydrogene_storage_penality, ppc=args.ppc, sell_to_grid=args.sell_to_grid, total_timesteps=len_episode*num_episode)
 
-    env = Monitor(env, log_dir, allow_early_resets=False)
-    env = DummyVecEnv([lambda: env])
-    callback = SaveOnBestTrainingRewardCallback(check_freq=len_episode, log_dir=log_dir)
-    model=DQN(CustomDQNPolicy, env, verbose=1,  exploration_final_eps=0.01, exploration_fraction=0.3,target_network_update_freq=1095, buffer_size=1000000, batch_size=264, learning_rate=0.02, double_q=True)
-    model.learn(total_timesteps=len_episode*num_episode, callback=callback)
+
+
     # model.learn(total_timesteps=1752000)
     # done=False
     # for i in range (20):
@@ -116,16 +135,10 @@ if __name__=="__main__":
     #     while done==False:
     #         action, state = model.predict(obs)
     #         obs, reward,done, info = env.step(action)
+
     from stable_baselines import results_plotter
 
     # Helper from the library
     results_plotter.plot_results([log_dir], len_episode*num_episode, results_plotter.X_TIMESTEPS, "DQN Microgrid Control")
     # plt.show()
-    #On génère un hash key qui correspond au dimensionnement:
-    dim=json.dumps(dim,sort_keys=True).encode('utf-8')
-    crypted_name=hashlib.md5(dim).hexdigest()
-
-    model.save("Result/"+crypted_name)
-    plot_results(log_dir,fname=fname)
-
 
