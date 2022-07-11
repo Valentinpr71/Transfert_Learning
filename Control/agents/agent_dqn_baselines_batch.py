@@ -1,13 +1,14 @@
 import argparse
 import numpy as np
-parser = argparse.ArgumentParser(description='Agent qui interagit en DQN')
-parser.add_argument("--hydrogene_storage_penality", help="activate rewards (or penalities) linked to hydrogene storage", const=True, nargs='?', default=False)
-parser.add_argument("--sell_to_grid", help="activate selling transition with main grid", const=True, nargs='?', default=False)
-parser.add_argument("--ppc", help="PPC maximum constraint, can be a number or None if you don't want limits", const=1.5, nargs='?', default=None)
-#parser.add_argument("--env", help = "The environment to import, can be by default microgrid_control_gymenv2 or if called microgrid_control_gymenv2_excess", const='excess',nargs='?',default=None)
-parser.add_argument("--dim", help="Dimension of the PV arrays and Battery Capacity", const=np.array(12.,15.),nargs='?',default=np.array(12.,15.))
-args = parser.parse_args()
-print(args)
+# parser = argparse.ArgumentParser(description='Agent qui interagit en DQN')
+# parser.add_argument("--hydrogene_storage_penality", help="activate rewards (or penalities) linked to hydrogene storage", const=True, nargs='?', default=False)
+# parser.add_argument("--sell_to_grid", help="activate selling transition with main grid", const=True, nargs='?', default=False)
+# parser.add_argument("--ppc", help="PPC maximum constraint, can be a number or None if you don't want limits", const=1.5, nargs='?', default=None)
+# #parser.add_argument("--env", help = "The environment to import, can be by default microgrid_control_gymenv2 or if called microgrid_control_gymenv2_excess", const='excess',nargs='?',default=None)
+# parser.add_argument("--dim", help="Dimension of the PV arrays and Battery Capacity", const=np.array(12.,15.),nargs='?',default=np.array(12.,15.))
+# args = parser.parse_args()
+# print(args)
+from microgrid.envs.import_data import Import_data
 
 import gym
 import matplotlib.pyplot as plt
@@ -29,8 +30,9 @@ from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines.bench import Monitor
 from stable_baselines.results_plotter import load_results, ts2xy
 from Callbacks.SavingBestRewards import SaveOnBestTrainingRewardCallback
-from .Tuple_ech import Interact
-from .buffer_tools.hash_manager import Dim_manager
+from Tuple_ech import Interact
+from buffer_tools.pretrain_policy import Pretrain
+from buffer_tools.hash_manager import Dim_manager
 from stable_baselines.deepq.policies import FeedForwardPolicy
 
 
@@ -81,34 +83,72 @@ class CustomDQNPolicy(MlpPolicy):
 
 
 if __name__=="__main__":
+    import_data=Import_data(mode="train")
+    consumption_norm = import_data._consumption_norm()
+    consumption = import_data.consumption()
     distance_euclidienne=4
     dim_num_iteration=50
     dim_boundaries={'PV':{'low':0,'high':12},'batt':{'low':0,'high':15}}
     hydrogene_storage_penality = ""
     ppc = ""
     sell_grid = ""
-    if args.hydrogene_storage_penality:
-        hydrogene_storage_penality = " Hydrogene Storage Penality "
-    if args.ppc is not None:
-        ppc = " PPC max cons=" + str(ppc)
-    if args.sell_to_grid:
-        sell_grid = " Excess energy goes to main grid "
+    # if args.hydrogene_storage_penality:
+    #     hydrogene_storage_penality = " Hydrogene Storage Penality "
+    # if args.ppc is not None:
+    #     ppc = " PPC max cons=" + str(ppc)
+    # if args.sell_to_grid:
+    #     sell_grid = " Excess energy goes to main grid "
 
     len_episode=8760
-    num_episode=40
+    num_episode=5
     #dim = [int(item) for item in args.dim.split(',')]
     manager = Dim_manager(distance=distance_euclidienne)
+    ###################################################################################################
+    #ATTENTION TRICHE !!
+    # dim_boundaries = {'PV': {'low': 0, 'high': 12}, 'batt': {'low': 0, 'high': 15}}
+    # manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])), float(
+    #     np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))]).tolist())
+    # manager.add_to_dicto()
+    # manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])), float(
+    #     np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))]).tolist())
+    # manager.add_to_dicto()
+    # manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])), float(
+    #     np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))]).tolist())
+    # manager.add_to_dicto()
+    # manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])), float(
+    #     np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))]).tolist())
+    # manager.add_to_dicto()
+    # manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])), float(
+    #     np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))]).tolist())
+    # manager.add_to_dicto()
+    # manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])), float(
+    #     np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))]).tolist())
+    # manager.add_to_dicto()
+    # manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])), float(
+    #     np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))]).tolist())
+    # manager.add_to_dicto()
+    # manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])), float(
+    #     np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))]).tolist())
+    # manager.add_to_dicto()
+    ###################################################################################################
     for i in range(dim_num_iteration):
         dim=np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))])
         manager._dim(dim.tolist())
+        parents = manager.choose_parents()
+        print("parents : ", parents, "dicto : ", manager.dicto,"dim : ", dim)
         if manager.add_to_dicto():
-            env = gym.make("microgrid:MicrogridControlGym-v0", dim=dim)
+            production_norm = import_data._production_norm(PV=dim[0])
+            production = import_data.production()
+            data = [consumption, consumption_norm, production, production_norm]
+            env = gym.make("microgrid:MicrogridControlGym-v0", dim=dim, data=[consumption, consumption_norm, production, production_norm])
             fname = hydrogene_storage_penality + ppc + sell_grid + str(dim)
             # Create unique log dir
-            log_dir = "Batch_RL_results".format(int(time.time()))
+            log_dir = "Batch_RL_results/"+manager._create_hashkey() #.format(int(time.time()))
+            if os.path.isfile(log_dir+"/best_model.zip"):
+                continue
             os.makedirs(log_dir, exist_ok=True)
             #Maintenant deux possibilités: Soit l'agent a à disposition des autres agents déjà entraînés et il peut constituer un batch, soit non et on va l'entraîner en on-line off-policy.
-            if len(manager.choose_parents())<2:#Pas assez de parents, on entraîne
+            if len(parents)<2:#Pas assez de parents, on entraîne
                 env = Monitor(env, log_dir, allow_early_resets=False)
                 env = DummyVecEnv([lambda: env])
                 callback = SaveOnBestTrainingRewardCallback(check_freq=len_episode, log_dir=log_dir)
@@ -118,7 +158,11 @@ if __name__=="__main__":
                 model.learn(total_timesteps=len_episode * num_episode, callback=callback)
                 manager.save_model(model)
             else:
-                
+                print('il n est pas encore temps')
+                classe = Interact(dim=manager.dim,agents_parents=parents,log=1,buffer_size=1000,data=data)
+                classe.get_tuples_pretrain()
+                print(classe.get_tuples_pretrain)
+
 
 
 
@@ -136,9 +180,12 @@ if __name__=="__main__":
     #         action, state = model.predict(obs)
     #         obs, reward,done, info = env.step(action)
 
-    from stable_baselines import results_plotter
+    # from stable_baselines import results_plotter
+    #
+    #
+    # results_plotter.plot_results([log_dir], len_episode*num_episode, results_plotter.X_TIMESTEPS, "DQN Microgrid Control")
 
-    # Helper from the library
-    results_plotter.plot_results([log_dir], len_episode*num_episode, results_plotter.X_TIMESTEPS, "DQN Microgrid Control")
+
+
     # plt.show()
 

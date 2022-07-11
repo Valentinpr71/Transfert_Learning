@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-def rule_based_actions(dim):
+def rule_based_actions(dim, data=[]):
     #P est le dimensionnement du microgrid
     Dim_PV=dim[0]
     Dim_batt=dim[1]
@@ -9,10 +9,14 @@ def rule_based_actions(dim):
     eta_batt=0.9
     # Importation des données/définition des constantes
     C_panne=2;
-    prod = pd.read_csv("data/data_prod.csv");
+    cons = data[1]
+    prod = data[3]
+    prod = pd.DataFrame(prod);
     prod.rename(columns = {list(prod)[0]: 'Valeurs'}, inplace = True)
-    cons = pd.read_csv('data/data_cons.csv');
+    cons = pd.DataFrame(cons);
+    print(cons)
     cons.rename(columns = {list(cons)[0]: 'Valeurs'}, inplace = True)
+    print(cons)
     SOC_min=0.1;
     SOC_max=0.8;
     E_H2_min=0;
