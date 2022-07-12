@@ -37,41 +37,51 @@ class Pretrain():
             obs, reward, is_done, info = self.env.step(action)
             rewards[i-1] = reward
             states[i] = obs
-        tuples = {'state': states, 'action': actions, 'reward': rewards}
         return actions, states, rewards
 
-    def pretrain_with_exploration(self,epsilon):
+    def pretrain_with_exploration(self,epsilon, nb_episodes_per_agent):
         i = 1
         obs = self.env.reset()
         is_done = False
         actions = {}
         states = {0: obs}
         rewards = {}
-        while not is_done:
-            if np.random.rand()<epsilon:
-                action = np.random.randint(3)
-            else:
-                action, _states = self.model.predict(obs)
-            actions[i-1] = action
-            #actions=np.append(actions, action)
-            obs, reward, is_done, info = self.env.step(action)
-            rewards[i-1] = reward
-            states[i] = _states
-            i += 1
+        for i in range(nb_episodes_per_agent):
+            print('ET DE UN EPISODE EN EXPLO')
+            while not is_done:
+                if np.random.rand()<epsilon:
+                    action = np.random.randint(3)
+                else:
+                    action, _states = self.model.predict(obs)
+                actions[i-1] = action
+                #actions=np.append(actions, action)
+                obs, reward, is_done, info = self.env.step(action)
+                rewards[i-1] = reward
+                states[i] = obs
+                i += 1
         tuples = {'state': states, 'action': actions, 'reward': rewards}
-        return tuples
+        return actions, states, rewards
 
-    def iterate_parents(self):
+    def iterate_parents(self, is_explo=False, nb_episodes_per_agent=0, epsilon=0):
+        # nb_episode_per_agent est le nombre d'épisodes à faire ne explorant par agent.
         j = 0
         tuples = {}
+        tuples_explo = {}
         actions ={}
         states = {}
         rewards = {}
+        actions_explo ={}
+        states_explo = {}
+        rewards_explo = {}
         for i in self.dicto:
             self.dim = self.dicto[i]
             print("dim : ",self.dim)
             self._load_agent(i)
             (actions[j], states[j], rewards[j]) = self.tuples_pretrain()
+            if is_explo:
+                print('IS EXPLO !!!!!')
+                (actions_explo[j], states_explo[j], rewards_explo[j]) = self.pretrain_with_exploration(epsilon=epsilon, nb_episodes_per_agent=nb_episodes_per_agent)
             tuples = {'state': states, 'action': actions, 'reward': rewards}
+            tuples_explo = {'state': states_explo, 'action': actions_explo, 'reward': rewards_explo}
             j += 1
-        return tuples
+        return tuples, tuples_explo

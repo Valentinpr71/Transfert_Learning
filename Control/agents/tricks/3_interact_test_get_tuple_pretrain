@@ -1,0 +1,39 @@
+from Tuple_ech import Interact
+from buffer_tools.hash_manager import Dim_manager
+import json
+import numpy as np
+
+manager=Dim_manager(4)
+dim_boundaries={'PV':{'low':0,'high':12},'batt':{'low':0,'high':15}}
+manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))]).tolist())
+manager.add_to_dicto()
+manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))]).tolist())
+manager.add_to_dicto()
+manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))]).tolist())
+manager.add_to_dicto()
+manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))]).tolist())
+manager.add_to_dicto()
+manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))]).tolist())
+manager.add_to_dicto()
+manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))]).tolist())
+manager.add_to_dicto()
+manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))]).tolist())
+manager.add_to_dicto()
+manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))]).tolist())
+manager.add_to_dicto()
+
+import gym
+dim=manager.dim
+
+from microgrid.envs.import_data import Import_data
+
+import_data = Import_data()
+production_norm = import_data._production_norm(PV=dim[0])
+production = import_data.production()
+consumption = import_data.consumption()
+consumption_norm = import_data._consumption_norm()
+data = [consumption, consumption_norm, production, production_norm]
+
+interact = Interact(data = data, agents_parents = {"a6ed7f54f52c1fb6f257fedbb1df87e3": [6.,6.], '7f8f98e0963b4e64627b5a0afd31d67f':[7.,1.]}, dim = [7.0,7.0], log = 2, buffer_size = 1000)
+interact._get_frac()
+Dro, Dro_exp = interact.get_tuples_pretrain(is_explo=(interact.frac_pretrain_exp > 0),nb_episodes_per_agent=int(interact.buffer_size*interact.frac_pretrain_exp/len(interact.agents)))

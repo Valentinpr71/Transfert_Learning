@@ -10,11 +10,11 @@ class Interact():
     de les utiliser afin de générer les tuples (s_t,a_t,r_t,s_t+1) qui alimenteront le buffer.
     Pour l'argument de l'agent pré-entraîné, on attend un dictionnaire comprenant le nom des fichiers à récupérer.
     """
-    def __init__(self, dim, agents_parents, log,buffer_size, data=[]):
+    def __init__(self, dim, agents_parents, log, buffer_size, data=[]):
         self.dim = dim
-        self.log=log
-        self.agents=agents_parents
-        self.buffer_size=buffer_size
+        self.log = log
+        self.agents = agents_parents
+        self.buffer_size = buffer_size
         self._get_frac()
         self.len_episode=8760
         self.data=data
@@ -33,16 +33,19 @@ class Interact():
             self.frac_rule = 0.1
             self.frac_pretrain = 0.3
             self.frac_pretrain_exp = 0.
-        if self.log == 2:
+            self.epsilon = 0.
+        elif self.log == 2:
             self.frac_random = 0.2
             self.frac_rule = 0.1
             self.frac_pretrain = 0.2
             self.frac_pretrain_exp = 0.6
-        if self.log == 3:
+            self.epsilon = 0.1
+        elif self.log == 3:
             self.frac_random = 0.
             self.frac_rule = 0.
             self.frac_pretrain = 0.05
             self.frac_pretrain_exp = 0.95
+            self.epsilon = 0.3
         else:
             return("ERROR log argument not in range")
 
@@ -103,25 +106,25 @@ class Interact():
         # tuples_rule = pd.concat([tuples_rule] * duplication, axis=1, ignore_index=True)
         return tuples_rule
 
-    def get_tuples_pretrain(self):
+    def get_tuples_pretrain(self, is_explo = False, nb_episodes_per_agent = 0):
         tuples = Pretrain(self.agents,data=self.data)
         tuples.dim = self.dim
-        tuples = tuples.iterate_parents()
-        duplication=self.buffer_size*self.frac_pretrain/len(self.agents)
-        print("duplication : ", duplication)
-        intermediaire = {"state":0,"action":0,"reward":0}
+        tuples, tuples_explo = tuples.iterate_parents(is_explo=is_explo, nb_episodes_per_agent=nb_episodes_per_agent,epsilon=self.epsilon)
+        duplication=int(self.buffer_size*self.frac_pretrain/len(self.agents))
+        intermediaire = {"state":{},"action":{},"reward":{}}
         for i in tuples['state'].keys():
             for j in range(duplication):
-                intermediaire["state"][i*duplication+j] = tuples['states'][i]
+                intermediaire["state"][i*duplication+j] = tuples['state'][i]
                 intermediaire["action"][i * duplication + j] = tuples['action'][i]
                 intermediaire["reward"][i * duplication + j] = tuples['reward'][i]
         #tuples_pretrain = pd.concat([tuples]*duplication,axis=1,ignore_index=True)
         #print("len tuples_pretrain : ", len(tuples_pretrain), "tuples_pretrain : ", tuples_pretrain)
-        return intermediaire
+        return intermediaire, tuples_explo
 
     def build_buffer(self):
         if self.frac_random:
             tuples_random = self.get_tuples_random()
         if self.frac_rule:
             tuples_rule = self.get_tuples_rule()
-        # if self.frac_pretrain:
+        if self.frac_pretrain:
+            tuples_pretrain, tuples_pretrain_exploration = self.get_tuples_pretrain(is_explo=(self.frac_pretrain_exp > 0), nb_episodes_per_agent=int(self.buffer_size*self.frac_pretrain_exp/len(self.agents)))
