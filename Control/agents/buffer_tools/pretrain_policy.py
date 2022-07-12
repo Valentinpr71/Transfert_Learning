@@ -4,6 +4,7 @@ import numpy as np
 from stable_baselines import DQN
 
 
+
 class Pretrain():
     """
     Cette classe récupère les modèles entraînés demandés et génères des actions dans l'environnement spécifié. C'est un outil pour la classe Tuple_ech.
@@ -27,38 +28,44 @@ class Pretrain():
         obs = self.env.reset()
         is_done = False
         actions = {}
-        states = {0: obs}
+        states = {}
         rewards = {}
         while not is_done:
+            states[i] = obs
             i += 1
             action, _states = self.model.predict(obs)
             actions[i-1] = action
             #actions=np.append(actions, action)
             obs, reward, is_done, info = self.env.step(action)
             rewards[i-1] = reward
-            states[i] = obs
         return actions, states, rewards
 
     def pretrain_with_exploration(self,epsilon, nb_episodes_per_agent):
-        i = 1
-        obs = self.env.reset()
-        is_done = False
+        states = {}
         actions = {}
-        states = {0: obs}
         rewards = {}
         for i in range(nb_episodes_per_agent):
+            j = 0
             print('ET DE UN EPISODE EN EXPLO')
+            obs = self.env.reset()
+            is_done = False
+            actions_episode = {}
+            states_episode = {0: obs}
+            rewards_episode = {}
             while not is_done:
                 if np.random.rand()<epsilon:
                     action = np.random.randint(3)
                 else:
                     action, _states = self.model.predict(obs)
-                actions[i-1] = action
+                states_episode[j] = obs
+                j += 1
+                actions_episode[j-1] = action
                 #actions=np.append(actions, action)
                 obs, reward, is_done, info = self.env.step(action)
-                rewards[i-1] = reward
-                states[i] = obs
-                i += 1
+                rewards_episode[j-1] = reward
+            states[i] = states_episode
+            actions[i] = actions_episode
+            rewards[i] = rewards_episode
         tuples = {'state': states, 'action': actions, 'reward': rewards}
         return actions, states, rewards
 

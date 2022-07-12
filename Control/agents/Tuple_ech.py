@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from buffer_tools.rule_based import rule_based_actions
 from buffer_tools.pretrain_policy import Pretrain
+from buffer_tools.delete_dict_layer import removeLevel
 
 class Interact():
     """"
@@ -38,7 +39,7 @@ class Interact():
             self.frac_random = 0.2
             self.frac_rule = 0.1
             self.frac_pretrain = 0.2
-            self.frac_pretrain_exp = 0.6
+            self.frac_pretrain_exp = 0.01
             self.epsilon = 0.1
         elif self.log == 3:
             self.frac_random = 0.
@@ -110,6 +111,7 @@ class Interact():
         tuples = Pretrain(self.agents,data=self.data)
         tuples.dim = self.dim
         tuples, tuples_explo = tuples.iterate_parents(is_explo=is_explo, nb_episodes_per_agent=nb_episodes_per_agent,epsilon=self.epsilon)
+        # tuples_explo = removeLevel(tuples_explo, 1)
         duplication=int(self.buffer_size*self.frac_pretrain/len(self.agents))
         intermediaire = {"state":{},"action":{},"reward":{}}
         for i in tuples['state'].keys():
@@ -128,3 +130,6 @@ class Interact():
             tuples_rule = self.get_tuples_rule()
         if self.frac_pretrain:
             tuples_pretrain, tuples_pretrain_exploration = self.get_tuples_pretrain(is_explo=(self.frac_pretrain_exp > 0), nb_episodes_per_agent=int(self.buffer_size*self.frac_pretrain_exp/len(self.agents)))
+            # tuples_pretrain_pretrain = removeLevel(tuples_pretrain, 1)
+            # tuples_pretrain_exploration = removeLevel(tuples_pretrain, 1)
+
