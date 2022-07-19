@@ -11,14 +11,14 @@ class Interact():
     de les utiliser afin de générer les tuples (s_t,a_t,r_t,s_t+1) qui alimenteront le buffer.
     Pour l'argument de l'agent pré-entraîné, on attend un dictionnaire comprenant le nom des fichiers à récupérer.
     """
-    def __init__(self, dim, agents_parents, log, buffer_size, data=[]):
-        self.dim = dim
+    def __init__(self, manager, log, buffer_size):
+        self.dim = manager.dim
         self.log = log
-        self.agents = agents_parents
+        self.agents = manager.agents_parents
         self.buffer_size = buffer_size
         self._get_frac()
         self.len_episode=8760
-        self.data=data
+        self.data=manager.data
     def _Action_rule_based(self):
         Action_rule_based = pd.DataFrame(rule_based_actions(dim=self.dim, data = self.data))
          #À déplacer, on ne veut pas dupiquer les actions x fois mais directement les tuples

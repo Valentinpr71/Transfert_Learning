@@ -86,6 +86,7 @@ if __name__=="__main__":
     import_data=Import_data(mode="train")
     consumption_norm = import_data._consumption_norm()
     consumption = import_data.consumption()
+
     distance_euclidienne=4
     dim_num_iteration=50
     dim_boundaries={'PV':{'low':0,'high':12},'batt':{'low':0,'high':15}}
@@ -103,6 +104,7 @@ if __name__=="__main__":
     num_episode=5
     #dim = [int(item) for item in args.dim.split(',')]
     manager = Dim_manager(distance=distance_euclidienne)
+    manager.add_data_cons(data_cons=consumption, data_cons_norm=consumption_norm)
     ###################################################################################################
     #ATTENTION TRICHE !!
     # dim_boundaries = {'PV': {'low': 0, 'high': 12}, 'batt': {'low': 0, 'high': 15}}
@@ -135,13 +137,14 @@ if __name__=="__main__":
         dim=np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))])
         manager._dim(dim.tolist())
         parents = manager.choose_parents()
-        print("parents : ", parents, "dicto : ", manager.dicto,"dim : ", dim)
+        print("parents : ", parents, "dicto : ", manager.dicto,"dim : ", manager.dim)
         if manager.add_to_dicto():
             production_norm = import_data._production_norm(PV=dim[0])
             production = import_data.production()
-            data = [consumption, consumption_norm, production, production_norm]
-            env = gym.make("microgrid:MicrogridControlGym-v0", dim=dim, data=[consumption, consumption_norm, production, production_norm])
+            manager.add_data_prod(data_prod=production, data_prod_norm=production_norm)
+            env = gym.make("microgrid:MicrogridControlGym-v0", dim=manager.dim, data=manager.data)
             fname = hydrogene_storage_penality + ppc + sell_grid + str(dim)
+
             # Create unique log dir
             log_dir = "Batch_RL_results/"+manager._create_hashkey() #.format(int(time.time()))
             if os.path.isfile(log_dir+"/best_model.zip"):
@@ -159,7 +162,7 @@ if __name__=="__main__":
                 manager.save_model(model)
             else:
                 print('il n est pas encore temps')
-                classe = Interact(dim=manager.dim,agents_parents=parents,log=1,buffer_size=1000,data=data)
+                classe = Interact(manager=manager, log=1, buffer_size=1000)
                 classe.get_tuples_pretrain()
                 print(classe.get_tuples_pretrain)
 
