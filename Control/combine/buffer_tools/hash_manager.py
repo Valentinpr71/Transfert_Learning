@@ -6,10 +6,11 @@ import json
 import hashlib
 
 class Dim_manager():
-    def __init__(self, distance):
+    def __init__(self, distance, nb_voisins):
         self.distance=distance
         self.dicto={}
         self.dim=None
+        self.nb_voisins = nb_voisins
 
     def _dim(self, dim):
         self.dim = dim
@@ -48,3 +49,13 @@ class Dim_manager():
         self.data_prod_norm = data_prod_norm
         self.data = [self.data_cons, self.data_cons_norm, self.data_prod, self.data_prod_norm]
 
+    def path(self):
+        fname = str(self.dim)
+        # Create unique log dir
+        log_dir = "Batch_RL_results/" + self._create_hashkey()  # .format(int(time.time()))
+        if os.path.isfile(log_dir + "/best_model.zip"):
+            carry = 1
+        else:
+            os.makedirs(log_dir, exist_ok=True)
+        self.log_dir = log_dir
+        return log_dir, carry
