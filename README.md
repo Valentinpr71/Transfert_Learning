@@ -13,6 +13,7 @@ et apprendre en batch RL. Si ce n'est pas le cas, l'agent apprend en on-line off
 Le buffer doit venir des politique de contrôle des agents entraînés dans un environnement proche, ansi que sur un algorithme purement déterministe (rule based). Comme en BCQ, l'idée est de construire un buffer qui a un large pannel de couples actions/états visités. Pour celà, on rajoute du bruit (équivalent à de l'exploration), qu'importe l'origine de la politique
 utilisée pour construire le buffer.
 
+***
 ### Différences effectives par rapport à BCQ
 
 * Première chose : Dans BCQ, il n'y a qu'un environnement. L'utilisateur spécifie au programme s'il veut entraîner un modèle from scratch (on-line en DQN), auquel cas il passera l'argument `train_behavioral` lors de l'execution du main. S'il veut utiliser une quelquonque politique, il peut utiliser l'argument `generate_buffer`.

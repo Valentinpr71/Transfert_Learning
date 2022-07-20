@@ -244,23 +244,31 @@ class main_BCQ():
 		env, state_dim, num_actions = utils.make_env(self.env, self.manager)
 		parameters =  self.regular_parameters
 		parents = self.manager.choose_parents()
+		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+		# Initialize buffer
+		replay_buffer = utils.ReplayBuffer(state_dim, parameters["batch_size"], parameters["buffer_size"], device)
+		args = pd.DataFrame(
+			[self.env, self.seed, self.buffer_name, self.max_timestep, self.BCQ_threshold, self.low_noise_p,
+			 self.rand_action_p],
+			columns=['env', 'seed', 'buffer_name', 'max_timestep', 'BCQ_threshold', 'low_noise_p', 'rand_action_p'])
+		env = Monitor(env, self.manager.log_dir, allow_early_resets=False)
+		env = DummyVecEnv([lambda: env])
+
 		if len(parents)<self.manager.nb_voisins:
-			env = Monitor(env, self.manager.log_dir, allow_early_resets=False)
-			env = DummyVecEnv([lambda: env])
-			callback = SaveOnBestTrainingRewardCallback(check_freq=len_episode, log_dir=self.manager.log_dir)
+			# if not enought close µgrid size, train from scratch in on-line setup
+			self.train_behavioral = True
+			self.generate_buffer = False
+			interact_with_environment(env, replay_buffer, False, num_actions, state_dim, device, args, parameters)
+		else:
+			# else, use buffers to train off-line
+			self.train_behavioral = False
+			self.generate_buffer = True
+			interact_with_environment(env, replay_buffer, False, num_actions, state_dim, device, args, parameters)
+			train_BCQ(env, replay_buffer, False, num_actions, state_dim, device, args, parameters)
+			
 	# # Set seeds
 	# env.seed(self.seed)
 	# env.action_space.seed(args.seed)
 	# torch.manual_seed(args.seed)
 	# np.random.seed(args.seed)
-
-		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-		# Initialize buffer
-		replay_buffer = utils.ReplayBuffer(state_dim, parameters["batch_size"], parameters["buffer_size"], device)
-		args = pd.DataFrame([self.env, self.seed, self.buffer_name, self.max_timestep, self.BCQ_threshold, self.low_noise_p, self.rand_action_p], columns=['env', 'seed', 'buffer_name', 'max_timestep','BCQ_threshold','low_noise_p', 'rand_action_p'])
-
-		if self.train_behavioral or self.generate_buffer:
-			interact_with_environment(env, replay_buffer, False, num_actions, state_dim, device, args, parameters)
-		else:
-			train_BCQ(env, replay_buffer, False, num_actions, state_dim, device, args, parameters)
