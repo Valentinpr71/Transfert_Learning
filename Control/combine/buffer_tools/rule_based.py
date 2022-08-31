@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-def rule_based_actions(dim, data=[]):
+def rule_based_actions(dim, data, epsilon, seed):
     #P est le dimensionnement du microgrid
     Dim_PV=dim[0]
     Dim_batt=dim[1]
@@ -14,9 +14,9 @@ def rule_based_actions(dim, data=[]):
     prod = pd.DataFrame(prod);
     prod.rename(columns = {list(prod)[0]: 'Valeurs'}, inplace = True)
     cons = pd.DataFrame(cons);
-    print(cons)
+    #print(cons)
     cons.rename(columns = {list(cons)[0]: 'Valeurs'}, inplace = True)
-    print(cons)
+    #print(cons)
     SOC_min=0.1;
     SOC_max=0.8;
     E_H2_min=0;
@@ -30,6 +30,7 @@ def rule_based_actions(dim, data=[]):
     E_H2=100; #Stockage H2 de départ
     P_nominal_H2 = 1.1;  # Puissance H2
     P_nominal_batt = Ebatt_max - Ebatt_min;  # Puissance batterie (C1)
+    nb_explo = 0
     for i in range(len(prod)):
         Pbatt=cons['Valeurs'][i]-(Dim_PV*prod['Valeurs'][i]/12.); #Demande nette, cette valeur est négative si la production dépasse la conso, positive sinon
         Pbatt_max=(max(Pbatt,0)/Pbatt)*min(P_nominal_batt*eta_batt,Pbatt)+(min(Pbatt,0)/Pbatt)*max(-P_nominal_batt*eta_batt,Pbatt);# (Dé)Charge de la batterie, on la limite si la puissance demandée est plus faible que la puissance nominale
@@ -39,15 +40,22 @@ def rule_based_actions(dim, data=[]):
         SOC=(SOC*Dim_batt-P_dech-P_charg*eta_batt)/Dim_batt; #Mise à jour du SOC.
         Delta=Pbatt-P_dech*eta_batt-P_charg; #Manque/Surplus à combler par H2. Le rendement n'intervient pas en dehors du système c'est pourquoi on l'enlève ne multipliant par son inverse
         if not(Delta==0):#On considère que la puissance d'électrolyse est la même que la puissance de PAC
+            seed+=1
             PH2_max=(max(Delta,0)/Delta)*min(P_nominal_H2*eta_PAC,Delta)+(min(Delta,0)/Delta)*max(-P_nominal_H2,Delta);
             # insérer le rendement ?
             PH2_dech=(max(PH2_max,0)/PH2_max)*(min(E_H2-E_H2_min,PH2_max*(1/eta_PAC))); #Puissance de décharge en tenant compte de l'énergie stockée
             PH2_charg=(min(PH2_max,0)/PH2_max)*(max(E_H2-E_H2_max,PH2_max)); #Puissance de charge (négative)
             #print(PH2_charg+PH2_dech, Delta)
             #print(PH2_charg,Delta, PH2_dech, PH2_dech*eta_PAC)
-            action[i]=((PH2_dech+PH2_charg)<-0.005)*2+((abs(PH2_dech+PH2_charg)<0.005)); # Action 0 = décharger, action 1 = Rien, action 2 = charger
+            np.random.seed(seed)
+            if np.random.rand() < epsilon:
+                nb_explo+=1
+                action[i] = np.random.randint(3)
+            else:
+                action[i]=((PH2_dech+PH2_charg)<-0.005)*2+((abs(PH2_dech+PH2_charg)<0.005)); # Action 0 = décharger, action 1 = Rien, action 2 = charger
             E_H2=E_H2-PH2_dech-PH2_charg*eta_H2;
             indicateur_panne[i]=(PH2_dech<Delta)*(Delta-(eta_PAC*PH2_dech)); # l'indicateur utilisé est l'énergie en déficit dans le système
+    print('nb_explo : ', nb_explo)
     ##Il faut retoucher le programme pour qu'il soit plus proche de microgridenv: Selon le signe du premier delta, on charge ou on décharge H2 à puissance max (peut importe combien on doit charger ou décharger). Puis la batterie équilibre le reste.
     ## Fonction coût panne
     return action

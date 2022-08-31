@@ -37,7 +37,7 @@ class Dim_manager():
         # arr=self.dicto
         # for i in self.dicto:
         #     arr[i] = (np.linalg.norm(self.dim - self.dicto[i]) < self.distance)
-        self.parents = {k: v for k, v in self.dicto.items() if (np.linalg.norm(np.array(self.dim) - np.array(v)) < self.distance)}
+        self.parents = {k: v for k, v in self.dicto.items() if ((np.linalg.norm(np.array(self.dim) - np.array(v)) < self.distance) and (np.linalg.norm(np.array(self.dim) - np.array(v) != 0)))}
         return self.parents #renvoie un dictionnaire rempli seulement avec les dimensionnement remplissant les conditions de distance euclidienne
 
     def add_data_cons(self, data_cons, data_cons_norm):

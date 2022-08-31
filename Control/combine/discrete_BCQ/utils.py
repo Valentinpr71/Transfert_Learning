@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 
-def ReplayBuffer(state_dim, atari_preprocessing, batch_size, buffer_size, device):
+def ReplayBuffer(state_dim, batch_size, buffer_size, device):
     return StandardBuffer(state_dim, batch_size, buffer_size, device)
 
 
@@ -171,7 +171,7 @@ class AtariPreprocessing(object):
 def make_env(env_name, manager):
     env = gym.make(env_name, dim=manager.dim, data=manager.data)
 
-    env = env
+    # env = env
 
     state_dim = env.observation_space.shape[0]
 

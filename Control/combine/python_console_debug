@@ -1,0 +1,52 @@
+from Tuple_ech import Interact
+from buffer_tools.rule_based import rule_based_actions
+from discrete_BCQ import utils
+
+from buffer_tools.hash_manager import Dim_manager
+import json
+import numpy as np
+import pandas as pd
+import torch
+
+
+manager=Dim_manager(4,2)
+dim_boundaries={'PV':{'low':0,'high':12},'batt':{'low':0,'high':15}}
+manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))]).tolist())
+manager.add_to_dicto()
+manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))]).tolist())
+manager.add_to_dicto()
+manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))]).tolist())
+manager.add_to_dicto()
+manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))]).tolist())
+manager.add_to_dicto()
+manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))]).tolist())
+manager.add_to_dicto()
+manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))]).tolist())
+manager.add_to_dicto()
+manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))]).tolist())
+manager.add_to_dicto()
+manager._dim(np.array([float(np.random.randint(dim_boundaries['PV']['low'],dim_boundaries['PV']['high'])),float(np.random.randint(dim_boundaries['batt']['low'],dim_boundaries['batt']['high']))]).tolist())
+manager.add_to_dicto()
+manager._dim(np.array([5.0,12.0]).tolist())
+manager.add_to_dicto()
+
+import gym
+dim=manager.dim
+
+from microgrid.envs.import_data import Import_data
+
+import_data = Import_data()
+production_norm = import_data._production_norm(PV=dim[0])
+production = import_data.production()
+consumption = import_data.consumption()
+consumption_norm = import_data._consumption_norm()
+
+manager.data = [consumption, consumption_norm, production, production_norm]
+manager.choose_parents()
+parameters = {"buffer_size":10000,"batch_size":64}
+env, state_dim, num_actions = utils.make_env("microgrid:MicrogridControlGym-v0", manager)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+replay_buffer = utils.ReplayBuffer(state_dim, parameters["batch_size"], parameters["buffer_size"], device)
+INTER = Interact(manager,log=1,buffer_size=parameters["buffer_size"], replay_buffer=replay_buffer)
+INTER.build_buffer()
+

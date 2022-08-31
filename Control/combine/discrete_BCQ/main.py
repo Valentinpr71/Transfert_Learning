@@ -14,9 +14,10 @@ from stable_baselines.bench import Monitor
 from . import discrete_BCQ
 from . import DQN
 from . import utils
+from ..Tuple_ech import Interact
 
 
-def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_dim, device, args, parameters):
+def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_dim, device, args, parameters, generate_buffer, train_behavioral):
 	# For saving files
 	setting = f"{args.env}_{args.seed}"
 	buffer_name = f"{args.buffer_name}_{setting}"
@@ -39,7 +40,7 @@ def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_d
 		parameters["eval_eps"],
 	)
 
-	if args.generate_buffer: policy.load(f"./models/behavioral_{setting}")
+	if generate_buffer: policy.load(f"./models/behavioral_{setting}")
 	
 	evaluations = []
 
@@ -58,13 +59,13 @@ def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_d
 		# If generating the buffer, episode is low noise with p=low_noise_p.
 		# If policy is low noise, we take random actions with p=eval_eps.
 		# If the policy is high noise, we take random actions with p=rand_action_p.
-		if args.generate_buffer:
+		if generate_buffer:
 			if not low_noise_ep and np.random.uniform(0,1) < args.rand_action_p - parameters["eval_eps"]:
 				action = env.action_space.sample()
 			else:
 				action = policy.select_action(np.array(state), eval=True)
 
-		if args.train_behavioral:
+		if train_behavioral:
 			if t < parameters["start_timesteps"]:
 				action = env.action_space.sample()
 			else:
@@ -88,7 +89,7 @@ def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_d
 		episode_start = False
 
 		# Train agent after collecting sufficient data
-		if args.train_behavioral and t >= parameters["start_timesteps"] and (t+1) % parameters["train_freq"] == 0:
+		if train_behavioral and t >= parameters["start_timesteps"] and (t+1) % parameters["train_freq"] == 0:
 			policy.train(replay_buffer)
 
 		if done:
@@ -103,7 +104,7 @@ def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_d
 			low_noise_ep = np.random.uniform(0,1) < args.low_noise_p
 
 		# Evaluate episode
-		if args.train_behavioral and (t + 1) % parameters["eval_freq"] == 0:
+		if train_behavioral and (t + 1) % parameters["eval_freq"] == 0:
 			evaluations.append(eval_policy(policy, args.env, args.seed))
 			np.save(f"./results/behavioral_{setting}", evaluations)
 			if evaluations[-1]>best_eval or best_eval == 0:
@@ -249,24 +250,26 @@ class main_BCQ():
 		# Initialize buffer
 		replay_buffer = utils.ReplayBuffer(state_dim, parameters["batch_size"], parameters["buffer_size"], device)
 		args = pd.DataFrame(
-			[self.env, self.seed, self.buffer_name, self.max_timestep, self.BCQ_threshold, self.low_noise_p,
-			 self.rand_action_p],
+			[[self.env, self.seed, self.buffer_name, self.max_timestep, self.BCQ_threshold, self.low_noise_p,
+			 self.rand_action_p]],
 			columns=['env', 'seed', 'buffer_name', 'max_timestep', 'BCQ_threshold', 'low_noise_p', 'rand_action_p'])
-		env = Monitor(env, self.manager.log_dir, allow_early_resets=False)
-		env = DummyVecEnv([lambda: env])
+		# env = Monitor(env, self.manager.log_dir, allow_early_resets=False)
+		# env = DummyVecEnv([lambda: env])
 
 		if len(parents)<self.manager.nb_voisins:
 			# if not enought close µgrid size, train from scratch in on-line setup
 			self.train_behavioral = True
 			self.generate_buffer = False
-			interact_with_environment(env, replay_buffer, False, num_actions, state_dim, device, args, parameters)
+			print("generate_buffer",self.generate_buffer,"train_behavioral", self.train_behavioral)
+			interact_with_environment(env, replay_buffer, False, num_actions, state_dim, device, args, parameters, self.generate_buffer, self.train_behavioral)
 		else:
 			# else, use buffers to train off-line
 			self.train_behavioral = False
 			self.generate_buffer = True
-			interact_with_environment(env, replay_buffer, False, num_actions, state_dim, device, args, parameters)
+			print("generate_buffer",self.generate_buffer,"train_behavioral", self.train_behavioral)
+			interact_with_environment(env, replay_buffer, False, num_actions, state_dim, device, args, parameters, self.generate_buffer, self.train_behavioral)
 			train_BCQ(env, replay_buffer, False, num_actions, state_dim, device, args, parameters)
-			
+
 	# # Set seeds
 	# env.seed(self.seed)
 	# env.action_space.seed(args.seed)
