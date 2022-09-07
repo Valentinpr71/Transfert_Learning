@@ -2,6 +2,41 @@
 
 Bienvenue dans ce git construit pour essayer de transferer des politiques d'un agent de contrôle à l'autre. Le but est de passer d'un dimensionnement de microgrid à un autre en minimisant le temps d'entraînement de l'agent avant la convergence de sa politique.
 
+### BCQ :
+
+Pour introduire le BCQ, *Fujimoto, 2019, Off-Policy Deep Reinforcement Learning without Exploration* a orquestré une expérience. Il compare la performance d'un DDPG online et de 3 DDPG entraînés off-line avec chacun une configuration.
+- **Final buffer**: On entraîne un agent DDPG sur 1M d'échantillonnage avec un taux d'exploration très élevé. Une fois qu'il est entraîné, on entraîne un autre agent DDPG avec le buffer rempli et seulement avec cette expérience. C'est lourd et le buffer doit couvrir beaucoup d'état-actions.
+- **Concurrent**: On les entraîne toujours sur 1M de tuple mais en même temps. L'agent off-policy échantillonne des tuples dans le replay buffer en temps réel.
+- **Imitation**: On échantillonne 1M de tuples venant d'un agent déjà entraîné, donc issus de la même politique. On fait de l'imitation learning sur ce buffer en le considérant comme les actions d'un expert pour le DDPG off-policy.
+
+Une conclusion étonnante est établie suite à ces expériences: Dans tous les cas (même le concurrent !), l'agent on-line surpasse largement les agents qui s'entraînent avec le buffer. De plus, l'estimation des valeurs diverge en off-policy alors qu'elles sont stables en on-policy. 
+
+Enfaite, en off-policy, les actions qui n'ont jamais été prises sont extrapolées avec une valeur supérieure à leur valeur réelle. C'est à cause du biais, qui est combiné à l'objectif de maximisation dans le RL. Avec un espace d'état et d'action continus, on contribue à augmenter cette erreur d'extrapolation. Même avec de nombreuses données, l'effet appelé *Catastrophic forgetting* (l'agent oublie ce qu'il a appris en début d'entraînement) engendre ce biais. Le RL off-line ne peut pas fonctionner dans le monde réel sans plus de garantie de fonctionnement et d'efficacité avec peu de données.
+
+Avec le **Batch Constrained RL**, l'estimations des valeurs faites par un algo RL off-policy peut être bien faite dans une région de l'environnement pour laquelle on a des données. 
+L'idée derrière cet algorithme est qu'une politique doit induire la même fréquence de visite état-action que le batch. Les politiques sont "Batch-Constrained". Les politiques sont entraînées pour sélectionner des actions selon 3 objectifs:
+
+1. Minimiser la distance entre les actions sélectionnées et celles du batch.
+2. Mener à des états ou des données familières peuvent êtres observées.
+3. Maximiser la fonction valeur.
+
+Si *1.* n'est pas respecté, *2.* et *3.* ne peuvent pas l'être. Pour assurer le respect de *1.*, un modèle génératif est utilisé. Il produit des actions en sortie avec une haute probabilité de choisir des actions du batch. On le combine avec un réseau de neurones (Q Network) qui perturbe le choix d'action en le poussant vers le choix le plus optimal. Puis, on entraîne 2 réseaux de neurones(Q-Networks). Le minimum des deux estimations des NN est utilisé afin d'éviter une sur-estimation des valeurs. 
+
+Pour résumer, il y a 4 réseaux de neurones paramètrés. Un modèle génératif $G_\omega(s)$, un modèle de perturbation $\zeta_\Phi(s,a)$ et 2 Q-Networks $Q_{\theta_{1}}(s,a)$ et $Q_{\theta_{2}}(s,a)$ fonctionnant en double DQN (donc chacun a un réseau target comme en DQN, de même pour $\zeta_\Phi(s,a)$) pour éviter des sur-estimations des valeurs. 
+
+$G_\omega(s)$ est un variational auto-encoder. Il n'est conditionné que par l'éatat dans lequel l'agent se situe. Il est composé d'un encodeur qui prends en entrée un couple état-action et donne en sortie une moyenne et un écart-type d'une distribution normale et d'un décodeur qui prend en entrée l'état et la distribution normale suivant ces paramètres et renvoit une action. La mise à jour de $\omega$ se fait avec la divergence KL entre la distribution normale renvoyée et une centré réduite, ainsi que la distance entre l'action dans le batch et l'action renvoyée. On ajoute une perturbation selon $\zeta_\Phi(s,a)$ dont la valeur dépend de la sortie de $G_\omega(s)$ et des valeurs de paires état-action. Cette valeur de perturbation est une petite action que l'on somme à la première action. **Ça ne peut donc fonctionner ainsi qu'en espace d'état-actions continus !!!** La mise à jour de $\Phi$ dépend de $\theta_1$ et $\theta_2$. La mise à jour des target se fait avec un $\tau$ compris entre 0 et 1 qui évite de changer brutalement les target selon lesde paramètre du réseau déployé.
+
+### Discrete batch Constraint RL
+
+La version discrète de BCQ a été introduite un peu plus tard, la même année. Au lieu de perturber une action échantillonnée dans une distribution, on a des actions discrètes. 
+$G_\omega(a|s) \approx \pi_b(a|s)$
+On peut donc simplement calculer leur probabilité selon la distribution, et supprimer des actions dont la probabilité est trop faible par rapport à l'action à probabilité maximale de la distribution (moyennant de choisir un seuil $\tau$ de probabilité relative).
+On peut donc écrire:
+
+$\underset{a\| \frac{G_\omega(a|s)}{\underset{\hat{a}}{max}G_\omega(\hat{a}|s)}\>\tau}{argmax}Q_{\theta}(s,a)$
+
+Ainsi, avec $\tau = 0$, on a affaire à un DQN classique alors qu'avec $\tau=1$, il s'agit d'imitation Learning.
+
 ### Principe :
 
 Pour chaque itération du dimensionnement du micro-réseau (dont on ne s'intéresse pas pour le moment), on observe les dimensionnements sur lesquels un agent a déjà été entraîné.
@@ -45,3 +80,4 @@ Une fois les installations faites, se placer dans le dossier Control/microgrid, 
 ```
 pip install -e microgrid
 ```
+

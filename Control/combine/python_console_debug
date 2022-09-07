@@ -49,4 +49,4 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 replay_buffer = utils.ReplayBuffer(state_dim, parameters["batch_size"], parameters["buffer_size"], device)
 INTER = Interact(manager,log=1,buffer_size=parameters["buffer_size"], replay_buffer=replay_buffer)
 INTER.build_buffer()
-
+	

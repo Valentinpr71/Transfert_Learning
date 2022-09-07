@@ -7,6 +7,7 @@ import os
 import numpy as np
 import torch
 import pandas as pd
+import gym
 
 from Callbacks.SavingBestRewards import SaveOnBestTrainingRewardCallback
 from stable_baselines.common.vec_env import DummyVecEnv
@@ -14,7 +15,7 @@ from stable_baselines.bench import Monitor
 from . import discrete_BCQ
 from . import DQN
 from . import utils
-from ..Tuple_ech import Interact
+from Tuple_ech import Interact
 
 
 def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_dim, device, args, parameters, generate_buffer, train_behavioral):
@@ -111,9 +112,9 @@ def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_d
 				best_eval=evaluations[-1]
 				policy.save(f"./models/behavioral_{setting}")
 
-	# # Save final policy
-	# if args.train_behavioral:
-	# 	policy.save(f"./models/behavioral_{setting}")
+	# Save final policy
+	if args.train_behavioral:
+		policy.save(f"./models/behavioral_{setting}")
 
 	# Save final buffer and performance
 	else:
