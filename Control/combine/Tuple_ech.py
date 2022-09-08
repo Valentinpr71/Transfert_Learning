@@ -11,7 +11,7 @@ class Interact():
     de les utiliser afin de générer les tuples (s_t,a_t,r_t,s_t+1) qui alimenteront le buffer.
     Pour l'argument de l'agent pré-entraîné, on attend un dictionnaire comprenant le nom des fichiers à récupérer.
     """
-    def __init__(self, manager, log, buffer_size, replay_buffer, low_noise_p=0.04):
+    def __init__(self, manager, log, buffer_size, replay_buffer, low_noise_p=0.04, rand_action_p=0.3, policy=None):
         self.dim = manager.dim
         self.log = log
         self.agents = manager.parents
@@ -21,7 +21,10 @@ class Interact():
         self.data = manager.data
         self.replay_buffer = replay_buffer
         self.low_noise_p = low_noise_p
-        self.epsilon=0.01
+        self.rand_action_p = rand_action_p
+        self.epsilon = 0.01
+        self.policy = policy
+
     def _Action_rule_based(self, epsilon, seed=0):
         Action_rule_based = pd.DataFrame(rule_based_actions(dim=self.dim, data = self.data, epsilon=epsilon, seed=seed))
          #À déplacer, on ne veut pas dupiquer les actions x fois mais directement les tuples
@@ -100,10 +103,10 @@ class Interact():
 
 
     def get_tuples_pretrain(self, nb_episodes_per_agent = 0):
-        tuples = Pretrain(self.agents,data=self.data, replay_buffer=self.replay_buffer)
+        tuples = Pretrain(self.agents,data=self.data, replay_buffer=self.replay_buffer, policy=self.policy)
         self.self_dim = self.dim
         tuples.dim = self.self_dim
-        replay_buffer = tuples.iterate_parents(low_noise_p=self.low_noise_p, nb_episodes_per_agent=nb_episodes_per_agent,epsilon=self.epsilon, high_noise_rate=0.35)
+        replay_buffer = tuples.iterate_parents(low_noise_p=self.low_noise_p, nb_episodes_per_agent=nb_episodes_per_agent,epsilon=self.epsilon, high_noise_rate=self.rand_action_p)
         return replay_buffer
 
     def build_buffer(self):

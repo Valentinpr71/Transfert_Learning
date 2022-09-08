@@ -27,4 +27,5 @@ for i in range(dim_num_iteration):
         env = "microgrid:MicrogridControlGym-v0"
         seed = 0
         max_timestep = 1e6 #Taille du buffer AMHA
+	BCQ = main_BCQ(env=env, manager=manager, seed=seed, buffer_name=buffer_name, max_timestep=max_timestep, BCQ_threshold=BCQ_threshold, low_noise_p=low_noise_p, rand_action_p=rand_action_p)
 

@@ -18,9 +18,9 @@ from . import utils
 from Tuple_ech import Interact
 
 
-def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_dim, device, args, parameters, generate_buffer, train_behavioral):
+def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_dim, device, args, parameters, generate_buffer, train_behavioral, inter=None):
 	# For saving files
-	setting = f"{args.env}_{args.seed}"
+	setting = f"{args.env}_{list(args.manager.dicto.keys())[-1]}" #On met le hashkey correspondant au dimensionnement actuel dans le nom. On retrouve ce dimensionnement comme le dernier ajouté au dictionnaire du manager
 	buffer_name = f"{args.buffer_name}_{setting}"
 
 	# Initialize and load policy
@@ -41,7 +41,7 @@ def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_d
 		parameters["eval_eps"],
 	)
 
-	if generate_buffer: policy.load(f"./models/behavioral_{setting}")
+	if generate_buffer: policy.load(f"./models/{setting}")
 	
 	evaluations = []
 
@@ -61,6 +61,7 @@ def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_d
 		# If policy is low noise, we take random actions with p=eval_eps.
 		# If the policy is high noise, we take random actions with p=rand_action_p.
 		if generate_buffer:
+			inter.policy = policy
 			if not low_noise_ep and np.random.uniform(0,1) < args.rand_action_p - parameters["eval_eps"]:
 				action = env.action_space.sample()
 			else:
@@ -72,37 +73,41 @@ def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_d
 			else:
 				action = policy.select_action(np.array(state))
 
-		# Perform action and log results
-		next_state, reward, done, info = env.step(action)
-		episode_reward += reward
+			##### EDIT :  Indentation de ce qui suit pour le mettre dans train_behavioral, c'est déjà implémenté dans mon code (Tuple_ech)
 
-		# Only consider "done" if episode terminates due to failure condition
-		done_float = float(done) if episode_timesteps < env._max_episode_steps else 0
+			# Perform action and log results
+			next_state, reward, done, info = env.step(action)
+			episode_reward += reward
 
-		# For atari, info[0] = clipped reward, info[1] = done_float
-		if is_atari:
-			reward = info[0]
-			done_float = info[1]
-			
-		# Store data in replay buffer
-		replay_buffer.add(state, action, next_state, reward, done_float, done, episode_start)
-		state = copy.copy(next_state)
-		episode_start = False
+			# Only consider "done" if episode terminates due to failure condition
+			done_float = float(done) if episode_timesteps < env._max_episode_steps else 0
+			#
+			# # For atari, info[0] = clipped reward, info[1] = done_float
+			# if is_atari:
+			# 	reward = info[0]
+			# 	done_float = info[1]
+
+			# Store data in replay buffer
+			replay_buffer.add(state, action, next_state, reward, done_float, done, episode_start)
+			state = copy.copy(next_state)
+			episode_start = False
 
 		# Train agent after collecting sufficient data
 		if train_behavioral and t >= parameters["start_timesteps"] and (t+1) % parameters["train_freq"] == 0:
 			policy.train(replay_buffer)
 
-		if done:
-			# +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
-			print(f"Total T: {t+1} Episode Num: {episode_num+1} Episode T: {episode_timesteps} Reward: {episode_reward:.3f}")
-			# Reset environment
-			state, done = env.reset(), False
-			episode_start = True
-			episode_reward = 0
-			episode_timesteps = 0
-			episode_num += 1
-			low_noise_ep = np.random.uniform(0,1) < args.low_noise_p
+			#### EDIT : Toujours une indentation car à la fin de l'appel de Tuple_ech, le buffer et rempli, on ne se soucie donc pas de ce qu'il se passe dans ni entre les episode de generate_buffer depuis le main
+
+			if done:
+				# +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
+				print(f"Total T: {t+1} Episode Num: {episode_num+1} Episode T: {episode_timesteps} Reward: {episode_reward:.3f}")
+				# Reset environment
+				state, done = env.reset(), False
+				episode_start = True
+				episode_reward = 0
+				episode_timesteps = 0
+				episode_num += 1
+				low_noise_ep = np.random.uniform(0,1) < args.low_noise_p
 
 		# Evaluate episode
 		if train_behavioral and (t + 1) % parameters["eval_freq"] == 0:
@@ -110,11 +115,11 @@ def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_d
 			np.save(f"./results/behavioral_{setting}", evaluations)
 			if evaluations[-1]>best_eval or best_eval == 0:
 				best_eval=evaluations[-1]
-				policy.save(f"./models/behavioral_{setting}")
+				policy.save(f"./models/{setting}")
 
 	# Save final policy
 	if args.train_behavioral:
-		policy.save(f"./models/behavioral_{setting}")
+		policy.save(f"./models/{setting}")
 
 	# Save final buffer and performance
 	else:
@@ -251,9 +256,9 @@ class main_BCQ():
 		# Initialize buffer
 		replay_buffer = utils.ReplayBuffer(state_dim, parameters["batch_size"], parameters["buffer_size"], device)
 		args = pd.DataFrame(
-			[[self.env, self.seed, self.buffer_name, self.max_timestep, self.BCQ_threshold, self.low_noise_p,
+			[[self.env, self.seed, self.manager, self.buffer_name, self.max_timestep, self.BCQ_threshold, self.low_noise_p,
 			 self.rand_action_p]],
-			columns=['env', 'seed', 'buffer_name', 'max_timestep', 'BCQ_threshold', 'low_noise_p', 'rand_action_p'])
+			columns=['env', 'seed', 'manager', 'buffer_name', 'max_timestep', 'BCQ_threshold', 'low_noise_p', 'rand_action_p'])
 		# env = Monitor(env, self.manager.log_dir, allow_early_resets=False)
 		# env = DummyVecEnv([lambda: env])
 
@@ -268,7 +273,9 @@ class main_BCQ():
 			self.train_behavioral = False
 			self.generate_buffer = True
 			print("generate_buffer",self.generate_buffer,"train_behavioral", self.train_behavioral)
-			interact_with_environment(env, replay_buffer, False, num_actions, state_dim, device, args, parameters, self.generate_buffer, self.train_behavioral)
+			replay_buffer = utils.ReplayBuffer(state_dim, parameters["batch_size"], parameters["buffer_size"], device)
+			self.INTER = Interact(self.manager, log=1, buffer_size=parameters["buffer_size"], replay_buffer=replay_buffer, low_noise_p=self.low_noise_p, rand_action_p=self.rand_action_p)
+			interact_with_environment(env, replay_buffer, False, num_actions, state_dim, device, args, parameters, self.generate_buffer, self.train_behavioral, inter=self.INTER)
 			train_BCQ(env, replay_buffer, False, num_actions, state_dim, device, args, parameters)
 
 	# # Set seeds
