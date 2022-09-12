@@ -1,6 +1,6 @@
-from .discrete_BCQ.main import main_BCQ
-from .microgrid.microgrid.envs.import_data import Import_data
-from .buffer_tools.hash_manager import Dim_manager
+from discrete_BCQ.main import main_BCQ
+from microgrid.envs.import_data import Import_data
+from buffer_tools.hash_manager import Dim_manager
 import pandas as pd
 import numpy as np
 import torch
@@ -27,6 +27,7 @@ if __name__ == "__main__":
 
 
     for i in range(dim_num_iteration):
+        print("HERE WE GOOO")
         dim = np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])),
                         float(np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))])
         manager._dim(dim.tolist())
@@ -35,4 +36,6 @@ if __name__ == "__main__":
             production_norm = import_data._production_norm(PV=dim[0])
             production = import_data.production()
             manager.add_data_prod(data_prod=production, data_prod_norm=production_norm)
-
+            BCQ = main_BCQ(env=env, manager=manager, seed=seed, buffer_name=buffer_name, max_timestep=max_timestep,
+                           BCQ_threshold=BCQ_threshold, low_noise_p=low_noise_p, rand_action_p=rand_action_p)
+            BCQ.Iterate()

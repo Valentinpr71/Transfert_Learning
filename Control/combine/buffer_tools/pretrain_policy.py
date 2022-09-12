@@ -28,7 +28,7 @@ class Pretrain():
         self.env = gym.make("microgrid:MicrogridControlGym-v0", dim=self.dim, data=self.data)
         ## modifs pour intégrer pytorch au load de l'agent pour faire comme avec le train_behavioral de BCQ
         self.policy.load(f"./models/{setting}")
-        self.model =
+        # self.model =
         # self.model = DQN.load("Batch_RL_results/"+filename+"/best_model.zip", env=self.env)
 
     def tuples_pretrain(self, num_episode, epsilon):
@@ -39,69 +39,24 @@ class Pretrain():
         self.pretrain_high_noise(nb_episodes_per_agent=num_episode-count)
         self.pretrain_low_noise(nb_episode=count)
 
-        # i = 1 #correspond au timestep dans un épisode
-        # obs = self.env.reset()
-        # is_done = False
-        # actions = {}
-        # states = {}
-        # rewards = {}
-        # while not is_done:
-        #     states[i] = obs
-        #     i += 1
-        #     action, _states = self.model.predict(obs)
-        #     actions[i-1] = action
-        #     #actions=np.append(actions, action)
-        #     obs, reward, is_done, info = self.env.step(action)
-        #     rewards[i-1] = reward
-        # return actions, states, rewards
+
 
     def pretrain_low_noise(self, nb_episode=0):
         #Déclanche le remplissage du buffer pour le nombre d'épisodes avec low_noise, donc une exploration faible (proba espilon)
-        # states = {}
-        # actions = {}
-        # rewards = {}
         for i in range(nb_episode):
             j = 0
             print('ET DE UN EPISODE EN HIGH NOISE')
             obs = self.env.reset()
             episode_start = True
             is_done = False
-            # actions_episode = {}
-            # states_episode = {0: obs}
-            # rewards_episode = {}
             while not is_done:
-                if np.random.rand()<epsilon:
-                    action = np.random.randint(3)
-                else:
-                    action, _states = self.model.predict(obs)
+                #modifié le 8 sept pour adapter a bcq
+                action = self.policy.select_action(np.array(obs))
                 states = obs
-                # j += 1
-                # actions_episode[j-1] = action
-                #actions=np.append(actions, action)
                 obs, reward, is_done, info = self.env.step(action)
                 # rewards_episode[j-1] = reward
                 self.replay_buffer.add(states, action, obs, reward, 0, is_done, episode_start)
                 episode_start = False
-        #     states[i] = states_episode
-        #     actions[i] = actions_episode
-        #     rewards[i] = rewards_episode
-        # tuples = {'state': states, 'action': actions, 'reward': rewards}
-        # return actions, states, rewards
-        # i = 1 #correspond au timestep dans un épisode
-        # obs = self.env.reset()
-        # is_done = False
-        # actions = {}
-        # states = {}
-        # rewards = {}
-        # while not is_done:
-        #     states[i] = obs
-        #     i += 1
-        #     action, _states = self.model.predict(obs)
-        #     actions[i-1] = action
-        #     #actions=np.append(actions, action)
-        #     obs, reward, is_done, info = self.env.step(action)
-        #     rewards[i-1] = reward
-        # return actions, states, rewards
 
     def pretrain_high_noise(self, nb_episodes_per_agent):
         #Déclanche le remplissage du buffer avec une plus grande probabilité d'actions aléatoires.
@@ -119,45 +74,22 @@ class Pretrain():
             # rewards_episode = {}
             while not is_done:
                 if np.random.rand()<self.low_noise_p:
-                    action = np.random.randint(3)
+                    action = self.env.action_space.sample()
+                    # action = np.random.randint(3)
                 else:
-                    action, _states = self.model.predict(obs)
+                    action = self.policy.select_action(np.array(obs))
+                    # action, _states = self.model.predict(obs)
                 states = obs
-                # j += 1
-                # actions_episode[j-1] = action
-                #actions=np.append(actions, action)
                 obs, reward, is_done, info = self.env.step(action)
                 # rewards_episode[j-1] = reward
                 self.replay_buffer.add(states, action, obs, reward, 0, is_done, episode_start)
                 episode_start = False
-        #     states[i] = states_episode
-        #     actions[i] = actions_episode
-        #     rewards[i] = rewards_episode
-        # tuples = {'state': states, 'action': actions, 'reward': rewards}
-        # return actions, states, rewards
+
 
     def iterate_parents(self, nb_episodes_per_agent=0, epsilon=0.01):
-        # nb_episode_per_agent est le nombre d'épisodes à faire en explorant par agent.
-        j = 0 #correspond au nombre de parents
-        # tuples = {}
-        # actions ={}
-        # states = {}
-        # rewards = {}
-        # tuples_explo = {}
-        # actions_explo ={}
-        # states_explo = {}
-        # rewards_explo = {}
         for i in self.dicto:
             self.dim = self.dicto[i]
             print("dim : ",self.dim)
             self._load_agent(str(i))
-            # if is_explo:
-            #     print('IS EXPLO !!!!!')
-            #     (actions_explo[j], states_explo[j], rewards_explo[j]) = self.pretrain_with_exploration(epsilon=epsilon, nb_episodes_per_agent=nb_episodes_per_agent)
-            #     tuples_explo = {'state': states_explo, 'action': actions_explo, 'reward': rewards_explo}
-            # (actions[j], states[j], rewards[j]) = self.tuples_pretrain(low_noise_p, nb_episodes_per_agent, high_noise_rate, epsilon)
             self.tuples_pretrain(self.low_noise_p, nb_episodes_per_agent, self.rand_action_p, epsilon)
-            # tuples = {'state': states, 'action': actions, 'reward': rewards}
-            #
-            # j += 1
         return self.replay_buffer

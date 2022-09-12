@@ -14,9 +14,9 @@ class microgrid_control_gym(gym.Env):
     def __init__(self, plot_every=10, ppc=None, sell_to_grid=False, total_timesteps=8760 * 10, month=[], dim=[12., 15.],
                  data=[]):  # ,month=[9,10,11,12,1,2]):
         print("dim :  568456 1", dim)
-        self.len_episode = 8760
+        self._max_episode_steps = 8760
         self.month = month
-        self.max_episode = total_timesteps / self.len_episode
+        self.max_episode = total_timesteps / self._max_episode_steps
         super(microgrid_control_gym, self).__init__()
         self.ppc_power_constraint = ppc
         self.sell_to_grid = sell_to_grid
@@ -67,8 +67,8 @@ class microgrid_control_gym(gym.Env):
             self.consumption_norm = consumption_norm
             self.dist_equinox = dist_equinox
 
-        self.len_episode = len(self.consumption_norm)
-        print('LONGUEUR D UN EPISODE:', self.len_episode)
+        self._max_episode_steps = len(self.consumption_norm)
+        print('LONGUEUR D UN EPISODE:', self._max_episode_steps)
 
         # Dimensionnement des batteries court et long terme
         self.battery_size = dim[1]
@@ -83,7 +83,6 @@ class microgrid_control_gym(gym.Env):
 
     def step(self, action):
         # arf=""
-
         # On calcule la demande nette en enlevant la consommation a la production, directement sur le datatset normé
         true_demand = self.consumption[self.counter - 1] - self.production[self.counter - 1]
         dist_equinox = self.dist_equinox[self.counter - 1]
@@ -219,7 +218,7 @@ class microgrid_control_gym(gym.Env):
     def render_to_file(self, filename='render.txt'):
         self.info[0] = self.counter
         self.info[1] = self.reward
-        if self.counter - self.len_episode == 0:
+        if self.counter - self._max_episode_steps == 0:
             Tableur = pd.DataFrame()
             Tableur['PV production'] = self.production_norm * 12000. / 1000.
             Tableur['Consumption'] = self.consumption_norm * 2.1
