@@ -25,13 +25,13 @@ class main_BCQ():
 			"nb_parents": 2,
 			"euclidian_dist": 4,
 			# Exploration
-			### Modifié pour la baisser dans les épisodes en low noise
-			"start_timesteps": 1e3,
+			### Modifié pour l'abaisser dans les épisodes en low noise
+			"start_timesteps": 1e3, #nombre de step avant de ne plus prendre d'action aléatoires
 			"initial_eps": 0.03,
 			"end_eps": 0.03,
 			"eps_decay_period": 1,
 			# Evaluation
-			"eval_freq": 5e3,
+			"eval_freq": 8759,#Attention c'est en nombre de step et pas en nombre d'épisodes
 			"eval_eps": 0,
 			# Learning
 			"discount": 0.99,
@@ -59,14 +59,14 @@ class main_BCQ():
 
 
 
-	# if not os.path.exists("./results"):
-	# 	os.makedirs("./results")
-	#
-	# if not os.path.exists("./models"):
-	# 	os.makedirs("./models")
-	#
-	# if not os.path.exists("./buffers"):
-	# 	os.makedirs("./buffers")
+	if not os.path.exists("./results"):
+		os.makedirs("./results")
+
+	if not os.path.exists("./models"):
+		os.makedirs("./models")
+
+	if not os.path.exists("./buffers"):
+		os.makedirs("./buffers")
 
 	def interact_with_environment(self, env, replay_buffer, is_atari, device, inter=None):
 		# For saving files
@@ -151,7 +151,7 @@ class main_BCQ():
 
 			# Train agent after collecting sufficient data
 			if self.train_behavioral and t >= parameters["start_timesteps"] and (t+1) % parameters["train_freq"] == 0:
-				policy.train(replay_buffer)
+				policy.train(replay_buffer) #policy.train echantillonne dans le buffer un batch (64 par defaut) d'où l'intérêt de remplir le buffer avec de l'aléatoire avant de train
 
 				#### EDIT : Toujours une indentation car à la fin de l'appel de Tuple_ech, le buffer et rempli, on ne se soucie donc pas de ce qu'il se passe dans ni entre les episode de generate_buffer depuis le main
 
@@ -219,7 +219,7 @@ class main_BCQ():
 		done = True
 		training_iters = 0
 
-		while training_iters < self.max_timesteps:
+		while training_iters < self.max_timestep:
 
 			for _ in range(int(parameters["eval_freq"])):
 				policy.train(replay_buffer)
@@ -233,7 +233,7 @@ class main_BCQ():
 
 	# Runs policy for X episodes and returns average reward
 	# A fixed seed is used for the eval environment
-	def eval_policy(self, policy, eval_episodes=10):
+	def eval_policy(self, policy, eval_episodes=5):
 		print('MANAGER.DIM : ', self.manager)
 		eval_env, _, _ = utils.make_env(self.env, manager=self.manager)
 		eval_env.seed(self.seed + 100)
