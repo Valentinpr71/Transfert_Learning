@@ -3,13 +3,15 @@ from microgrid.envs.import_data import Import_data
 from buffer_tools.hash_manager import Dim_manager
 import pandas as pd
 import numpy as np
+from os.path import exists
+import glob
 import torch
 
 if __name__ == "__main__":
     dim_num_iteration=5
     dim_boundaries = {'PV': {'low': 0, 'high': 12}, 'batt': {'low': 0, 'high': 15}}
     distance_euclidienne = 4
-    nb_voisins = 2
+    nb_voisins = 1
     manager = Dim_manager(distance=distance_euclidienne,nb_voisins=nb_voisins)
     import_data = Import_data(mode="train")
     consumption = import_data.consumption()
@@ -19,7 +21,7 @@ if __name__ == "__main__":
     ### Arguments ne variant pas pour le main BCQ:
     env = "microgrid:MicrogridControlGym-v0"
     seed = 0
-    max_timestep = 1e6  # Nombre d'iteration si generate buffer ou train_behavioral. C'est le nombre de tuples utilisés
+    max_timestep = 1e5  # Nombre d'iteration si generate buffer ou train_behavioral. C'est le nombre de tuples utilisés
     buffer_name = "Essai_0" #préfixe au nom du fichier
     BCQ_threshold = 0.3 #tau expliqué sur le README pour Discrete BCQ
     low_noise_p = 0.01 #probabilité que l'épisode soit avec une faible exploration epsilon, dans le cas contraire, il prendra une décision aléatoire avec un taux égal à l'argument rand_action_p
@@ -34,7 +36,15 @@ if __name__ == "__main__":
         dim = cheat_dim_list[i]
         manager._dim(dim.tolist())
         manager.choose_parents()
+
+
         if manager.add_to_dicto():
+            print(f"/results/{env}_{manager._create_hashkey()}")
+            results = glob.glob("./results/*.npy")
+            if True in [manager._create_hashkey() in i for i in results]:
+            # if exists("./results/"+env+"_"+manager._create_hashkey()+".npy"):
+                print('Agent already trained for this microgrid dimension')
+                continue
             production_norm = import_data._production_norm(PV=dim[0])
             production = import_data.production()
             manager.add_data_prod(data_prod=production, data_prod_norm=production_norm)

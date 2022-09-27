@@ -17,7 +17,7 @@ from . import DQN
 from . import utils
 from Tuple_ech import Interact
 class main_BCQ():
-	def __init__(self, env, manager, seed=0, buffer_name="Default", max_timestep=1e6, BCQ_threshold=0.3, low_noise_p=0.01, rand_action_p=0.3):
+	def __init__(self, env, manager, seed=0, buffer_name="Default", max_timestep=1e5, BCQ_threshold=0.3, low_noise_p=0.01, rand_action_p=0.3):
 
 
 		self.regular_parameters = {
@@ -35,7 +35,7 @@ class main_BCQ():
 			"eval_eps": 0,
 			# Learning
 			"discount": 0.99,
-			"buffer_size": 1e6,
+			"buffer_size": 1e5,
 			"batch_size": 64,
 			"optimizer": "Adam",
 			"optimizer_parameters": {
@@ -43,7 +43,7 @@ class main_BCQ():
 			},
 			"train_freq": 1,
 			"polyak_target_update": True,
-			"target_update_freq": 1,
+			"target_update_freq": 1e3,
 			"tau": 0.005
 		}
 
@@ -77,7 +77,7 @@ class main_BCQ():
 		print("MANAGER : ", manager)
 		# Initialize and load policy
 		parameters=self.regular_parameters
-		policy = DQN.DQN(
+		policy0 = DQN.DQN(
 			is_atari,
 			self.num_actions,
 			self.state_dim,
@@ -93,8 +93,25 @@ class main_BCQ():
 			parameters["eps_decay_period"],
 			parameters["eval_eps"],
 		)
-
-		if self.generate_buffer: policy.load(f"./models/{setting}")
+		policy1 = discrete_BCQ.discrete_BCQ(
+			is_atari,
+			self.num_actions,
+			self.state_dim,
+			device,
+			self.BCQ_threshold,
+			parameters["discount"],
+			parameters["optimizer"],
+			parameters["optimizer_parameters"],
+			parameters["polyak_target_update"],
+			parameters["target_update_freq"],
+			parameters["tau"],
+			parameters["initial_eps"],
+			parameters["end_eps"],
+			parameters["eps_decay_period"],
+			parameters["eval_eps"]
+		)
+		policy=[policy0,policy1]
+		# if self.generate_buffer: policy.load(f"./models/{setting}")
 
 		evaluations = []
 
@@ -110,6 +127,8 @@ class main_BCQ():
 		else:
 			inter.policy = policy
 		# Interact with the environment for max_timesteps
+		if self.generate_buffer:
+			inter.build_buffer()
 		for t in range(int(self.max_timestep)):
 
 			episode_timesteps += 1
@@ -117,8 +136,7 @@ class main_BCQ():
 			# If generating the buffer, episode is low noise with p=low_noise_p.
 			# If policy is low noise, we take random actions with p=eval_eps.
 			# If the policy is high noise, we take random actions with p=rand_action_p.
-			if self.generate_buffer:
-				inter.build_buffer()
+
 				# if not low_noise_ep and np.random.uniform(0,1) < self.rand_action_p - parameters["eval_eps"]:
 				# 	action = env.action_space.sample()
 				# else:
@@ -128,7 +146,7 @@ class main_BCQ():
 				if t < parameters["start_timesteps"]:
 					action = env.action_space.sample()
 				else:
-					action = policy.select_action(np.array(state))
+					action = policy0.select_action(np.array(state))
 
 				##### EDIT :  Indentation de ce qui suit pour le mettre dans train_behavioral, c'est déjà implémenté dans mon code (Tuple_ech)
 
@@ -151,7 +169,7 @@ class main_BCQ():
 
 			# Train agent after collecting sufficient data
 			if self.train_behavioral and t >= parameters["start_timesteps"] and (t+1) % parameters["train_freq"] == 0:
-				policy.train(replay_buffer) #policy.train echantillonne dans le buffer un batch (64 par defaut) d'où l'intérêt de remplir le buffer avec de l'aléatoire avant de train
+				policy0.train(replay_buffer) #policy.train echantillonne dans le buffer un batch (64 par defaut) d'où l'intérêt de remplir le buffer avec de l'aléatoire avant de train
 
 				#### EDIT : Toujours une indentation car à la fin de l'appel de Tuple_ech, le buffer et rempli, on ne se soucie donc pas de ce qu'il se passe dans ni entre les episode de generate_buffer depuis le main
 
@@ -168,25 +186,29 @@ class main_BCQ():
 
 			# Evaluate episode
 			if self.train_behavioral and (t + 1) % parameters["eval_freq"] == 0:
-				evaluations.append(self.eval_policy(policy))
+				evaluations.append(self.eval_policy(policy0))
 				np.save(f"./results/{setting}", evaluations)
 				if evaluations[-1]>best_eval or best_eval == 0:
 					best_eval = evaluations[-1]
-					policy.save(f"./models/{setting}")
+					policy0.save(f"./models/{setting}")
 
 		# Save final policy
 		if self.train_behavioral:
-			policy.save(f"./models/{setting}")
+			policy0.save(f"./models/{setting}")
+
+		else:
+			replay_buffer.save(f"./buffers/{buffer_name}")
 
 		# Save final buffer and performance
-		else:
+		if not self.generate_buffer:
 			evaluations.append(self.eval_policy(policy))
 			np.save(f"./results/{setting}", evaluations)
-			replay_buffer.save(f"./buffers/{buffer_name}")
+
 
 
 	# Trains BCQ offline
 	def train_BCQ(self, replay_buffer, is_atari, device):
+		best_eval = 0
 		# For saving files
 		setting = f"{self.env}_{list(self.manager.dicto.keys())[-1]}"
 		# setting = f"{self.env}_{self.seed}"
@@ -226,14 +248,19 @@ class main_BCQ():
 
 			evaluations.append(self.eval_policy(policy))
 			np.save(f"./results/BCQ_{setting}", evaluations)
+			if evaluations[-1] > best_eval or best_eval == 0:
+				best_eval = evaluations[-1]
+				policy.save(f"./models/{setting}")
 
 			training_iters += int(parameters["eval_freq"])
 			print(f"Training iterations: {training_iters}")
+			print("END OF A BCQ TRAINING LOOP")
+		policy.save(f"./models/{setting}")
 
 
 	# Runs policy for X episodes and returns average reward
 	# A fixed seed is used for the eval environment
-	def eval_policy(self, policy, eval_episodes=5):
+	def eval_policy(self, policy, eval_episodes=1):
 		print('MANAGER.DIM : ', self.manager)
 		eval_env, _, _ = utils.make_env(self.env, manager=self.manager)
 		eval_env.seed(self.seed + 100)
@@ -284,8 +311,10 @@ class main_BCQ():
 			print("generate_buffer",self.generate_buffer,"train_behavioral", self.train_behavioral)
 			replay_buffer = utils.ReplayBuffer(self.state_dim, self.regular_parameters["batch_size"], self.regular_parameters["buffer_size"], device)
 			self.INTER = Interact(self.manager, log=1, buffer_size=self.regular_parameters["buffer_size"], replay_buffer=replay_buffer, low_noise_p=self.low_noise_p, rand_action_p=self.rand_action_p)
+			print("INTERACT TO GENERATE BUFFER NOW")
 			self.interact_with_environment(env, replay_buffer, False, device, inter=self.INTER)
-			self.train_BCQ(env, replay_buffer, False, device)
+			print("TRAIN BCQ NOW")
+			self.train_BCQ(replay_buffer, False, device)
 
 	# # Set seeds
 	# env.seed(self.seed)

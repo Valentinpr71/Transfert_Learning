@@ -38,20 +38,20 @@ class Interact():
         if self.log == 1:
             self.frac_random = 0.6
             self.frac_rule = 0.1
-            self.frac_pretrain = 0.3
-            self.frac_pretrain_exp = 0.
+            self.frac_pretrain = 0.7
+            self.frac_pretrain_exp = self.frac_pretrain
             self.epsilon = 0.
         elif self.log == 2:
             self.frac_random = 0.2
             self.frac_rule = 0.1
             self.frac_pretrain = 0.2
-            self.frac_pretrain_exp = 0.01
+            self.frac_pretrain_exp = self.frac_pretrain
             self.epsilon = 0.1
         elif self.log == 3:
             self.frac_random = 0.
             self.frac_rule = 0.
             self.frac_pretrain = 0.05
-            self.frac_pretrain_exp = 0.95
+            self.frac_pretrain_exp = self.frac_pretrain
             self.epsilon = 0.3
         else:
             return("ERROR log argument not in range")
@@ -81,7 +81,7 @@ class Interact():
 
     def get_tuples_rule(self, epsilon_rule):
         env = gym.make("microgrid:MicrogridControlGym-v0", dim=self.dim, data=self.data)
-        duplications = int(self.buffer_size * self.frac_rule)
+        duplications = int((self.buffer_size * self.frac_rule)/self.len_episode)
         for j in range(duplications):
             Action_rule_based = self._Action_rule_based(epsilon_rule, seed=j)
             Action_rule_based = Action_rule_based[0]
@@ -103,10 +103,10 @@ class Interact():
 
 
     def get_tuples_pretrain(self, nb_episodes_per_agent = 0):
-        tuples = Pretrain(self.agents,data=self.data, replay_buffer=self.replay_buffer, policy=self.policy)
+        tuples = Pretrain(self.agents,data=self.data, low_noise_p=self.low_noise_p, rand_action_p=self.rand_action_p, replay_buffer=self.replay_buffer, policy=self.policy)
         self.self_dim = self.dim
         tuples.dim = self.self_dim
-        replay_buffer = tuples.iterate_parents(low_noise_p=self.low_noise_p, nb_episodes_per_agent=nb_episodes_per_agent,epsilon=self.epsilon, high_noise_rate=self.rand_action_p)
+        replay_buffer = tuples.iterate_parents(nb_episodes_per_agent=nb_episodes_per_agent,epsilon=self.epsilon)
         return replay_buffer
 
     def build_buffer(self):
@@ -115,6 +115,7 @@ class Interact():
         if self.frac_rule:
             self.get_tuples_rule(epsilon_rule=0.05)
         if self.frac_pretrain:
-            self.get_tuples_pretrain(nb_episodes_per_agent=int(self.buffer_size*self.frac_pretrain_exp/len(self.agents)))
+            print("NB EP PER AGENT : ", int(self.buffer_size*self.frac_pretrain_exp/len(self.agents)))
+            self.get_tuples_pretrain(nb_episodes_per_agent=int(self.buffer_size*self.frac_pretrain_exp/(len(self.agents)*self.len_episode)))
             # tuples_pretrain_pretrain = removeLevel(tuples_pretrain, 1)
             # tuples_pretrain_exploration = removeLevel(tuples_pretrain, 1)

@@ -2,6 +2,7 @@ import gym
 import pandas as pd
 import numpy as np
 from stable_baselines import DQN
+import glob
 
 
 
@@ -21,7 +22,8 @@ class Pretrain():
         self.replay_buffer=replay_buffer
         self.low_noise_p = low_noise_p
         self.rand_action_p = rand_action_p
-        self.policy = policy
+        self.policy0 = policy[0]
+        self.policy1 = policy[1]
 
     def _load_agent(self,filename):
         setting = f"microgrid:MicrogridControlGym-v0_"+filename
@@ -36,6 +38,7 @@ class Pretrain():
         for i in range(num_episode):
             low_noise_ep = np.random.uniform(0, 1) < self.low_noise_p
             count+=low_noise_ep
+        print("COUNT : ", count)
         self.pretrain_high_noise(nb_episodes_per_agent=num_episode-count)
         self.pretrain_low_noise(nb_episode=count)
 
@@ -87,9 +90,17 @@ class Pretrain():
 
 
     def iterate_parents(self, nb_episodes_per_agent=0, epsilon=0.01):
+        print("PRETRAIN POLICY --> iterate parents, sample tuples from parents policy for self.dicto = ", self.dicto)
         for i in self.dicto:
             self.dim = self.dicto[i]
             print("dim : ",self.dim)
+            ### VP : Cette partie un peu tricky permet de charger la "forme" de la politique adaptée selon si elle vient d'un BCQ ou d'un individu qui a intéragit
+            # Cette lecture se fait facilement avec le nom du fichier de résultat lié au hashkey qui va permettre de charger la politique. Soit il y a BCQ dans le nom, soit il n'y est pas
+            file = glob.glob(f"./results/*{i}.npy")
+            if "BCQ" in file[0]:
+                self.policy = self.policy1
+            else:
+                self.policy = self.policy0
             self._load_agent(str(i))
-            self.tuples_pretrain(self.low_noise_p, nb_episodes_per_agent, self.rand_action_p, epsilon)
+            self.tuples_pretrain(nb_episodes_per_agent, epsilon)
         return self.replay_buffer
