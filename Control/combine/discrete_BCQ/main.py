@@ -3,6 +3,7 @@ import copy
 import importlib
 import json
 import os
+import time
 
 import numpy as np
 import torch
@@ -17,7 +18,7 @@ from . import DQN
 from . import utils
 from Tuple_ech import Interact
 class main_BCQ():
-	def __init__(self, env, manager, seed=0, buffer_name="Default", max_timestep=1e5, BCQ_threshold=0.3, low_noise_p=0.01, rand_action_p=0.3):
+	def __init__(self, env, manager, seed=0, buffer_name="Default", max_timestep=1e6, BCQ_threshold=0.3, low_noise_p=0.01, rand_action_p=0.3):
 
 
 		self.regular_parameters = {
@@ -35,7 +36,7 @@ class main_BCQ():
 			"eval_eps": 0,
 			# Learning
 			"discount": 0.99,
-			"buffer_size": 1e5,
+			"buffer_size": 1e6,
 			"batch_size": 64,
 			"optimizer": "Adam",
 			"optimizer_parameters": {
@@ -201,7 +202,7 @@ class main_BCQ():
 
 		# Save final buffer and performance
 		if not self.generate_buffer:
-			evaluations.append(self.eval_policy(policy))
+			evaluations.append(self.eval_policy(policy0))
 			np.save(f"./results/{setting}", evaluations)
 
 
@@ -255,7 +256,9 @@ class main_BCQ():
 			training_iters += int(parameters["eval_freq"])
 			print(f"Training iterations: {training_iters}")
 			print("END OF A BCQ TRAINING LOOP")
-		policy.save(f"./models/{setting}")
+		# policy.save(f"./models/{setting}")
+		evaluations.append(self.eval_policy(policy))
+		np.save(f"./results/BCQ_{setting}", evaluations)
 
 
 	# Runs policy for X episodes and returns average reward
@@ -283,7 +286,7 @@ class main_BCQ():
 
 
 
-	def Iterate(self):
+	def Iterate(self, temps):
 		len_episode = 8760
 		env, self.state_dim, self.num_actions = utils.make_env(self.env, self.manager)
 		parents = self.manager.choose_parents()
@@ -299,23 +302,29 @@ class main_BCQ():
 		# env = DummyVecEnv([lambda: env])
 
 		if len(parents)<self.manager.nb_voisins:
+			start = time.time()
 			# if not enought close µgrid size, train from scratch in on-line setup
 			self.train_behavioral = True
 			self.generate_buffer = False
 			print("generate_buffer",self.generate_buffer,"train_behavioral", self.train_behavioral)
 			self.interact_with_environment(env, replay_buffer, False, device)
+			end = time.time()
+			temps["behavioral"] = temps["behavioral"].append(end-start)
 		else:
 			# else, use buffers to train off-line
+			start = time.time()
 			self.train_behavioral = False
 			self.generate_buffer = True
 			print("generate_buffer",self.generate_buffer,"train_behavioral", self.train_behavioral)
-			replay_buffer = utils.ReplayBuffer(self.state_dim, self.regular_parameters["batch_size"], self.regular_parameters["buffer_size"], device)
+			#replay_buffer = utils.ReplayBuffer(self.state_dim, self.regular_parameters["batch_size"], self.regular_parameters["buffer_size"], device)
 			self.INTER = Interact(self.manager, log=1, buffer_size=self.regular_parameters["buffer_size"], replay_buffer=replay_buffer, low_noise_p=self.low_noise_p, rand_action_p=self.rand_action_p)
 			print("INTERACT TO GENERATE BUFFER NOW")
 			self.interact_with_environment(env, replay_buffer, False, device, inter=self.INTER)
 			print("TRAIN BCQ NOW")
 			self.train_BCQ(replay_buffer, False, device)
-
+			end = time.time()
+			temps["bcq"] = temps["bcq"].append(end - start)
+		return(temps)
 	# # Set seeds
 	# env.seed(self.seed)
 	# env.action_space.seed(self.seed)

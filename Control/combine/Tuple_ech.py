@@ -36,21 +36,21 @@ class Interact():
 
     def _get_frac(self):
         if self.log == 1:
-            self.frac_random = 0.6
+            # self.frac_random = 0.6
             self.frac_rule = 0.1
-            self.frac_pretrain = 0.7
+            self.frac_pretrain = 0.9
             self.frac_pretrain_exp = self.frac_pretrain
             self.epsilon = 0.
         elif self.log == 2:
-            self.frac_random = 0.2
-            self.frac_rule = 0.1
-            self.frac_pretrain = 0.2
+            # self.frac_random = 0.2
+            self.frac_rule = 0.4
+            self.frac_pretrain = 0.6
             self.frac_pretrain_exp = self.frac_pretrain
             self.epsilon = 0.1
         elif self.log == 3:
-            self.frac_random = 0.
-            self.frac_rule = 0.
-            self.frac_pretrain = 0.05
+            # self.frac_random = 0.
+            self.frac_rule = 0.5
+            self.frac_pretrain = 0.5
             self.frac_pretrain_exp = self.frac_pretrain
             self.epsilon = 0.3
         else:
@@ -81,7 +81,7 @@ class Interact():
 
     def get_tuples_rule(self, epsilon_rule):
         env = gym.make("microgrid:MicrogridControlGym-v0", dim=self.dim, data=self.data)
-        duplications = int((self.buffer_size * self.frac_rule)/self.len_episode)
+        duplications = int(1+(self.buffer_size * self.frac_rule)/self.len_episode)
         for j in range(duplications):
             Action_rule_based = self._Action_rule_based(epsilon_rule, seed=j)
             Action_rule_based = Action_rule_based[0]

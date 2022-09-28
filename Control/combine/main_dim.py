@@ -21,12 +21,12 @@ if __name__ == "__main__":
     ### Arguments ne variant pas pour le main BCQ:
     env = "microgrid:MicrogridControlGym-v0"
     seed = 0
-    max_timestep = 1e5  # Nombre d'iteration si generate buffer ou train_behavioral. C'est le nombre de tuples utilisés
+    max_timestep = 1e6  # Nombre d'iteration si generate buffer ou train_behavioral. C'est le nombre de tuples utilisés
     buffer_name = "Essai_0" #préfixe au nom du fichier
     BCQ_threshold = 0.3 #tau expliqué sur le README pour Discrete BCQ
     low_noise_p = 0.01 #probabilité que l'épisode soit avec une faible exploration epsilon, dans le cas contraire, il prendra une décision aléatoire avec un taux égal à l'argument rand_action_p
     rand_action_p = 0.3 #probabilité de prendre une action aléatoire si l'on n'est pas dans un low noise episode
-
+    temps = {"behavioral":np.array([]),"bcq":np.array([])}
 
     for i in range(dim_num_iteration):
         print("HERE WE GOOO")
@@ -50,4 +50,5 @@ if __name__ == "__main__":
             manager.add_data_prod(data_prod=production, data_prod_norm=production_norm)
             BCQ = main_BCQ(env=env, manager=manager, seed=seed, buffer_name=buffer_name, max_timestep=max_timestep,
                            BCQ_threshold=BCQ_threshold, low_noise_p=low_noise_p, rand_action_p=rand_action_p)
-            BCQ.Iterate()
+            temps = BCQ.Iterate(temps)
+            print("TEMPS DE CALCUL : ", temps)
