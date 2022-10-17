@@ -56,6 +56,8 @@ class DQN(object):
 		end_eps = 0.001,
 		eps_decay_period = 25e4,
 		eval_eps=0.001,
+		writter = None,
+			train_freq= 1
 	):
 	
 		self.device = device
@@ -84,6 +86,8 @@ class DQN(object):
 
 		# Number of training iterations
 		self.iterations = 0
+		self.writter = writter
+		self.train_freq = train_freq
 
 
 	def select_action(self, state, eval=False):
@@ -113,7 +117,7 @@ class DQN(object):
 
 		# Compute Q loss
 		Q_loss = F.smooth_l1_loss(current_Q, target_Q)
-
+		self.writter.add_scalar("Loss/train", Q_loss, replay_buffer.crt_size/self.train_freq)
 		# Optimize the Q
 		self.Q_optimizer.zero_grad()
 		Q_loss.backward()
@@ -122,7 +126,7 @@ class DQN(object):
 		# Update target network by polyak or full copy every X iterations.
 		self.iterations += 1
 		self.maybe_update_target()
-
+		# return Q_loss
 
 	def polyak_target_update(self):
 		for param, target_param in zip(self.Q.parameters(), self.Q_target.parameters()):

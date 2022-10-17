@@ -1,0 +1,1 @@
+comme essai_1 avec target update freq 1280 (5 fois batch size)

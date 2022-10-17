@@ -1,7 +1,6 @@
 import gym
 import pandas as pd
 import numpy as np
-from stable_baselines import DQN
 import glob
 
 
@@ -26,7 +25,7 @@ class Pretrain():
         self.policy1 = policy[1]
 
     def _load_agent(self,filename):
-        setting = f"microgrid:MicrogridControlGym-v0_"+filename
+        setting = f"MicrogridControlGym-v0_"+filename
         self.env = gym.make("microgrid:MicrogridControlGym-v0", dim=self.dim, data=self.data)
         ## modifs pour intégrer pytorch au load de l'agent pour faire comme avec le train_behavioral de BCQ
         self.policy.load(f"./models/{setting}")
@@ -48,7 +47,7 @@ class Pretrain():
         #Déclanche le remplissage du buffer pour le nombre d'épisodes avec low_noise, donc une exploration faible (proba espilon)
         for i in range(nb_episode):
             j = 0
-            print('ET DE UN EPISODE EN HIGH NOISE')
+            print('ET DE UN EPISODE EN low NOISE')
             obs = self.env.reset()
             episode_start = True
             is_done = False
@@ -58,7 +57,7 @@ class Pretrain():
                 states = obs
                 obs, reward, is_done, info = self.env.step(action)
                 # rewards_episode[j-1] = reward
-                self.replay_buffer.add(states, action, obs, reward, 0, is_done, episode_start)
+                self.replay_buffer.add(states, action, obs, reward, float(is_done), is_done, episode_start)
                 episode_start = False
 
     def pretrain_high_noise(self, nb_episodes_per_agent):
@@ -66,6 +65,7 @@ class Pretrain():
         # states = {}
         # actions = {}
         # rewards = {}
+        is_done = False
         for i in range(nb_episodes_per_agent):
             j = 0
             print('ET DE UN EPISODE EN HIGH NOISE')
@@ -85,7 +85,7 @@ class Pretrain():
                 states = obs
                 obs, reward, is_done, info = self.env.step(action)
                 # rewards_episode[j-1] = reward
-                self.replay_buffer.add(states, action, obs, reward, 0, is_done, episode_start)
+                self.replay_buffer.add(states, action, obs, reward, float(is_done), is_done, episode_start)
                 episode_start = False
 
 

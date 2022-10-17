@@ -72,6 +72,8 @@ class discrete_BCQ(object):
 		end_eps = 0.001,
 		eps_decay_period = 25e4,
 		eval_eps=0.001,
+		writer = None,
+		train_freq = 1
 	):
 	
 		self.device = device
@@ -104,6 +106,10 @@ class discrete_BCQ(object):
 		# Number of training iterations
 		self.iterations = 0
 
+		#Ajouts de VP
+		self.writter = writer
+		self.train_freq = train_freq
+
 
 	def select_action(self, state, eval=False):
 		# Select action according to policy with probability (1-eps)
@@ -122,7 +128,7 @@ class discrete_BCQ(object):
 
 	def train(self, replay_buffer):
 		# Sample replay buffer
-		state, action, next_state, reward, done = replay_buffer.sample()
+		state, action, next_state, reward, done = replay_buffer.sample() #Dans sample, on échantillonne un batch et non un tuple
 
 		# Compute the target Q value
 		with torch.no_grad():
@@ -145,7 +151,7 @@ class discrete_BCQ(object):
 		i_loss = F.nll_loss(imt, action.reshape(-1))
 
 		Q_loss = q_loss + i_loss + 1e-2 * i.pow(2).mean()
-
+		self.writter.add_scalar("Loss/train", Q_loss, replay_buffer.crt_size/self.train_freq)
 		# Optimize the Q
 		self.Q_optimizer.zero_grad()
 		Q_loss.backward()

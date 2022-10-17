@@ -19,18 +19,18 @@ if __name__ == "__main__":
     manager.add_data_cons(data_cons=consumption, data_cons_norm=consumption_norm)
 
     ### Arguments ne variant pas pour le main BCQ:
-    env = "microgrid:MicrogridControlGym-v0"
+    env = "MicrogridControlGym-v0"
     seed = 0
     max_timestep = 1e6  # Nombre d'iteration si generate buffer ou train_behavioral. C'est le nombre de tuples utilisés
     buffer_name = "Essai_0" #préfixe au nom du fichier
     BCQ_threshold = 0.3 #tau expliqué sur le README pour Discrete BCQ
-    low_noise_p = 0.01 #probabilité que l'épisode soit avec une faible exploration epsilon, dans le cas contraire, il prendra une décision aléatoire avec un taux égal à l'argument rand_action_p
+    low_noise_p = 0.1 #probabilité que l'épisode soit avec une faible exploration epsilon, dans le cas contraire, il prendra une décision aléatoire avec un taux égal à l'argument rand_action_p
     rand_action_p = 0.3 #probabilité de prendre une action aléatoire si l'on n'est pas dans un low noise episode
     temps = {"behavioral":np.array([]),"bcq":np.array([])}
 
     for i in range(dim_num_iteration):
         print("HERE WE GOOO")
-        cheat_dim_list = [np.array([5.0, 10.0]),np.array([6.0,10.0]),np.array([6.0,11.0]),np.array([7.0,10.0]),np.array([7.0,11.0])] #Ajouté uniquement dans un but d'analyse de l'algo au début (on force le nb de voisin a etre petit)
+        cheat_dim_list = [np.array([10.0,11.0]),np.array([10.0,14.0]),np.array([11.0,13.0]), np.array([9.0, 10.0]),np.array([9.0,11.0]),np.array([10.0,9.0])] #Ajouté uniquement dans un but d'analyse de l'algo au début (on force le nb de voisin a etre petit)
         # dim = np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])),
         #                 float(np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))])
         dim = cheat_dim_list[i]

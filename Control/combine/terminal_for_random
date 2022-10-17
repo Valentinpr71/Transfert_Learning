@@ -1,0 +1,23 @@
+from microgrid.envs.import_data import Import_data
+from buffer_tools.hash_manager import Dim_manager
+from Tuple_ech import Interact
+
+
+a = Dim_manager(4,2)
+a._dim([6.,10.])
+a._create_hashkey()
+a.choose_parents()
+import_data = Import_data(mode="train")
+consumption = import_data.consumption()
+consumption_norm = import_data._consumption_norm()
+production = import_data.production()
+production_norm = import_data._production_norm(PV=a.dim[0])
+
+a.add_data_cons(data_cons=consumption, data_cons_norm=consumption_norm)
+a.add_data_prod(data_prod=production, data_prod_norm=production_norm)
+inter = Interact(manager=a,log=1,buffer_size=1e6,replay_buffer=None,low_noise_p=0.04, rand_action_p=0.3,policy=None)
+inter.frac_random = 0.00001
+inter.get_tuples_random()
+rand = inter.get_tuples_random()
+sum((list(rand['reward'].values())[9]).values())
+

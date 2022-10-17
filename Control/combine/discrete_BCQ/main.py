@@ -17,9 +17,11 @@ from . import discrete_BCQ
 from . import DQN
 from . import utils
 from Tuple_ech import Interact
-class main_BCQ():
-	def __init__(self, env, manager, seed=0, buffer_name="Default", max_timestep=1e6, BCQ_threshold=0.3, low_noise_p=0.01, rand_action_p=0.3):
+from torch.utils.tensorboard import SummaryWriter
 
+class main_BCQ():
+	def __init__(self, env, manager, seed=0, buffer_name="Default", max_timestep=1e6, BCQ_threshold=0.3, low_noise_p=0.1, rand_action_p=0.3):
+		self.writer = SummaryWriter()
 
 		self.regular_parameters = {
 			# multi_env
@@ -27,24 +29,26 @@ class main_BCQ():
 			"euclidian_dist": 4,
 			# Exploration
 			### Modifié pour l'abaisser dans les épisodes en low noise
-			"start_timesteps": 1e3, #nombre de step avant de ne plus prendre d'action aléatoires
-			"initial_eps": 0.03,
-			"end_eps": 0.03,
+			"start_timesteps": 8760, #nombre de step avant de ne plus prendre que des actions aléatoires
+			"initial_eps": 0.01,
+			"end_eps": 0.1,
 			"eps_decay_period": 1,
 			# Evaluation
-			"eval_freq": 8759,#Attention c'est en nombre de step et pas en nombre d'épisodes
-			"eval_eps": 0,
+			#"eval_freq": 8759,#Attention c'est en nombre de step et pas en nombre d'épisodes
+			"eval_freq": 8760,
+			"eval_eps": 0.005,
 			# Learning
-			"discount": 0.99,
+			"discount": 0.9,
 			"buffer_size": 1e6,
-			"batch_size": 64,
+			"batch_size": 256,
 			"optimizer": "Adam",
 			"optimizer_parameters": {
-				"lr": 3e-4
+				"lr": 1e-8
 			},
 			"train_freq": 1,
-			"polyak_target_update": True,
-			"target_update_freq": 1e3,
+			"polyak_target_update": False,
+			"target_update_freq": 70000,
+			#tau passé de 0.005 à 0.9
 			"tau": 0.005
 		}
 
@@ -89,10 +93,15 @@ class main_BCQ():
 			parameters["polyak_target_update"],
 			parameters["target_update_freq"],
 			parameters["tau"],
-			parameters["initial_eps"],
-			parameters["end_eps"],
-			parameters["eps_decay_period"],
+			#parameters["initial_eps"],
+			1,
+			#parameters["end_eps"],
+			0.01,
+			# parameters["eps_decay_period"],
+			600000,
 			parameters["eval_eps"],
+			self.writer,
+			parameters["train_freq"]
 		)
 		policy1 = discrete_BCQ.discrete_BCQ(
 			is_atari,
@@ -109,7 +118,9 @@ class main_BCQ():
 			parameters["initial_eps"],
 			parameters["end_eps"],
 			parameters["eps_decay_period"],
-			parameters["eval_eps"]
+			parameters["eval_eps"],
+			self.writer,
+			parameters['train_freq']
 		)
 		policy=[policy0,policy1]
 		# if self.generate_buffer: policy.load(f"./models/{setting}")
@@ -170,20 +181,20 @@ class main_BCQ():
 
 			# Train agent after collecting sufficient data
 			if self.train_behavioral and t >= parameters["start_timesteps"] and (t+1) % parameters["train_freq"] == 0:
-				policy0.train(replay_buffer) #policy.train echantillonne dans le buffer un batch (64 par defaut) d'où l'intérêt de remplir le buffer avec de l'aléatoire avant de train
-
-				#### EDIT : Toujours une indentation car à la fin de l'appel de Tuple_ech, le buffer et rempli, on ne se soucie donc pas de ce qu'il se passe dans ni entre les episode de generate_buffer depuis le main
-
+				# Q_loss = Q_loss + policy0.train(replay_buffer) #policy.train echantillonne dans le buffer un batch (64 par defaut) d'où l'intérêt de remplir le buffer avec de l'aléatoire avant de train
+				policy0.train(replay_buffer)
+				#### EDIT : Toujours une indentation car à la fin de l'appel de Tuple_ech, le buffer est rempli, on ne se soucie donc pas de ce qu'il se passe dans ni entre les episode de generate_buffer depuis le main
+			if self.train_behavioral:
 				if done:
 					# +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
-					print(f"Total T: {t+1} Episode Num: {episode_num+1} Episode T: {episode_timesteps} Reward: {episode_reward:.3f}")
+					print(f'Total T: {t+1} Episode Num: {episode_num+1} Episode T: {episode_timesteps} Reward: {episode_reward:.3f}')
 					# Reset environment
 					state, done = env.reset(), False
 					episode_start = True
 					episode_reward = 0
 					episode_timesteps = 0
 					episode_num += 1
-					low_noise_ep = np.random.uniform(0,1) < self.low_noise_p
+					# low_noise_ep = np.random.uniform(0,1) < self.low_noise_p
 
 			# Evaluate episode
 			if self.train_behavioral and (t + 1) % parameters["eval_freq"] == 0:
@@ -197,8 +208,9 @@ class main_BCQ():
 		if self.train_behavioral:
 			policy0.save(f"./models/{setting}")
 
-		else:
-			replay_buffer.save(f"./buffers/{buffer_name}")
+# On enlève le else, on sauvegarde le replay buffer dans tous les cas pour voir ce qu'il s'y passe
+		# else:
+		replay_buffer.save(f"./buffers/{buffer_name}")
 
 		# Save final buffer and performance
 		if not self.generate_buffer:
@@ -231,7 +243,9 @@ class main_BCQ():
 			parameters["initial_eps"],
 			parameters["end_eps"],
 			parameters["eps_decay_period"],
-			parameters["eval_eps"]
+			parameters["eval_eps"],
+			self.writer,
+			parameters['train_freq']
 		)
 
 		# Load replay buffer
@@ -267,12 +281,16 @@ class main_BCQ():
 		print('MANAGER.DIM : ', self.manager)
 		eval_env, _, _ = utils.make_env(self.env, manager=self.manager)
 		eval_env.seed(self.seed + 100)
-
+		action_list = np.array([])
 		avg_reward = 0.
 		for _ in range(eval_episodes):
 			state, done = eval_env.reset(), False
+			i=0
 			while not done:
+				i+=1
 				action = policy.select_action(np.array(state), eval=True)
+				# action = eval_env.action_space.sample()
+				action_list = np.append(action_list, action)
 				state, reward, done, _ = eval_env.step(action)
 				avg_reward += reward
 
@@ -309,7 +327,7 @@ class main_BCQ():
 			print("generate_buffer",self.generate_buffer,"train_behavioral", self.train_behavioral)
 			self.interact_with_environment(env, replay_buffer, False, device)
 			end = time.time()
-			temps["behavioral"] = temps["behavioral"].append(end-start)
+			temps["behavioral"] = np.append(temps["behavioral"],end-start)
 		else:
 			# else, use buffers to train off-line
 			start = time.time()
@@ -323,7 +341,7 @@ class main_BCQ():
 			print("TRAIN BCQ NOW")
 			self.train_BCQ(replay_buffer, False, device)
 			end = time.time()
-			temps["bcq"] = temps["bcq"].append(end - start)
+			temps["bcq"] = np.append(temps["bcq"],end - start)
 		return(temps)
 	# # Set seeds
 	# env.seed(self.seed)

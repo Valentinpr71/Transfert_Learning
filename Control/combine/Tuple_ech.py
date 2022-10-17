@@ -59,7 +59,7 @@ class Interact():
     def get_tuples_random(self):
         Action_random=self._Action_random()
         print('len de Action_random : ', len(Action_random))
-        env = gym.make("microgrid:MicrogridControlGym-v0", dim=self.dim, data=self.data)
+        env = gym.make("MicrogridControlGym-v0", dim=self.dim, data=self.data)
         rewards_random = {}
         states_random = {}
         actions_random = {}
@@ -80,7 +80,7 @@ class Interact():
         return tuples_random
 
     def get_tuples_rule(self, epsilon_rule):
-        env = gym.make("microgrid:MicrogridControlGym-v0", dim=self.dim, data=self.data)
+        env = gym.make("MicrogridControlGym-v0", dim=self.dim, data=self.data)
         duplications = int(1+(self.buffer_size * self.frac_rule)/self.len_episode)
         for j in range(duplications):
             Action_rule_based = self._Action_rule_based(epsilon_rule, seed=j)
@@ -96,7 +96,7 @@ class Interact():
                 i += 1
                 actions_rule[i-1] = Action_rule_based[i-1]
                 action = actions_rule[i-1]
-                self.replay_buffer.add(state, action, obs, reward, 0, is_done, episode_start)
+                self.replay_buffer.add(state, action, obs, reward, float(is_done), is_done, episode_start)
                 episode_start = False
 
 

@@ -32,6 +32,12 @@ class StandardBuffer(object):
         self.reward[self.ptr] = reward
         self.not_done[self.ptr] = 1. - done
 
+        # self.state[self.crt_size] = state
+        # self.action[self.crt_size] = action
+        # self.next_state[self.crt_size] = next_state
+        # self.reward[self.crt_size] = reward
+        # self.not_done[self.crt_size] = 1. - done
+
         self.ptr = (self.ptr + 1) % self.max_size
         self.crt_size = min(self.crt_size + 1, self.max_size)
 

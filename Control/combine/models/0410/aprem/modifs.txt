@@ -1,0 +1,3 @@
+exp decay modifié pour 75% de l'entrainement en behavioral.
+Peut etre changer freq target update pour plusieurs fois par episode
+Peut etre un multiple du batc size ??

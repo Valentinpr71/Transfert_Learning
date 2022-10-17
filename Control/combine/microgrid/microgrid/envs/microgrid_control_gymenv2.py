@@ -11,9 +11,9 @@ from render.testplot2 import Test_plot
 class microgrid_control_gym(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, plot_every=10, ppc=None, sell_to_grid=False, total_timesteps=8760 * 10, month=[], dim=[12., 15.],
+    def __init__(self, plot_every=10, ppc=None, sell_to_grid=True, total_timesteps=8760 * 10, month=[], dim=[12., 15.],
                  data=[]):  # ,month=[9,10,11,12,1,2]):
-        print("dim :  568456 1", dim)
+        print("dim :  eff", dim)
         self._max_episode_steps = 8760
         self.month = month
         self.max_episode = total_timesteps / self._max_episode_steps
@@ -124,7 +124,7 @@ class microgrid_control_gym(gym.Env):
                 self.energy_bought.append(Energy_needed_from_battery - self._last_ponctual_observation[
                     0] * self.battery_size * self.battery_eta)  # On décharge tout quoiqu'il arrive dans cette situation, donc eta au nominateur pour savoir de combien on a déchargé
                 reward -= (Energy_needed_from_battery - self._last_ponctual_observation[
-                    0] * self.battery_size * self.battery_eta) * 2
+                    0] * self.battery_size * self.battery_eta)
                 # On est obligé de pomper dans le réseau central au prix de 2€/kWh
                 self._last_ponctual_observation[0] = 0
             self.info[2] = 0.
@@ -140,7 +140,7 @@ class microgrid_control_gym(gym.Env):
                     Energy_needed_from_battery / self.battery_size) * self.battery_eta) == 1. and self.sell_to_grid:
                 # If the battery is full and there is a surplus of energy, sell it to the grid at 0.5€ per kW. As the (mean of production is 1.5 kW), we define self.ppc_power_constraint as the PCC threshold
                 if self.ppc_power_constraint == None:
-                    reward += (self._last_ponctual_observation[
+                    reward -= (self._last_ponctual_observation[
                                    0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1) * 0.5  # 27 juin : J'ai multiplié par eta plutot que de diviser et rajouté un -1 pour ce qui concerne le surplus d'énergie
                     self.info[2] = 0.
                     self.energy_sold.append(self._last_ponctual_observation[
@@ -151,10 +151,10 @@ class microgrid_control_gym(gym.Env):
                     if threshold == self.ppc_power_constraint:  # If the surplus>PCC max power
                         self.info[2] = (self._last_ponctual_observation[
                                             0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1) - self.ppc_power_constraint  # 27 juin : idem
-                        reward += self.ppc_power_constraint * 0.5
+                        reward -= self.ppc_power_constraint * 0.5
                         self.energy_sold.append(self.ppc_power_constraint)
                     else:
-                        reward += (self._last_ponctual_observation[
+                        reward -= (self._last_ponctual_observation[
                                        0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1) * 0.5  # 27juin:idem
                         self.info[2] = 0.
                         self.energy_sold.append(self._last_ponctual_observation[
