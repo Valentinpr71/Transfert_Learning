@@ -38,12 +38,12 @@ class main_BCQ():
 			"eval_freq": 8760,
 			"eval_eps": 0.005,
 			# Learning
-			"discount": 0.9,
+			"discount": 0.75,
 			"buffer_size": 1e6,
 			"batch_size": 256,
 			"optimizer": "Adam",
 			"optimizer_parameters": {
-				"lr": 1e-8
+				"lr": 1e-3
 			},
 			"train_freq": 1,
 			"polyak_target_update": False,
@@ -76,6 +76,7 @@ class main_BCQ():
 	def interact_with_environment(self, env, replay_buffer, is_atari, device, inter=None):
 		# For saving files
 		manager = self.manager
+		coeff_norm = max((manager.data[0].max()),(manager.data[3].max()))
 		setting = f"{self.env}_{list(manager.dicto.keys())[-1]}" #On met le hashkey correspondant au dimensionnement actuel dans le nom. On retrouve ce dimensionnement comme le dernier ajouté au dictionnaire du manager
 		buffer_name = f"{self.buffer_name}_{setting}"
 		print("SETING : ", setting)
@@ -96,7 +97,7 @@ class main_BCQ():
 			#parameters["initial_eps"],
 			1,
 			#parameters["end_eps"],
-			0.01,
+			0.1,
 			# parameters["eps_decay_period"],
 			600000,
 			parameters["eval_eps"],
@@ -165,7 +166,7 @@ class main_BCQ():
 				# Perform action and log results
 				next_state, reward, done, info = env.step(action)
 				episode_reward += reward
-
+				norm_reward = reward/coeff_norm
 				# Only consider "done" if episode terminates due to failure condition
 				done_float = float(done) if episode_timesteps < env._max_episode_steps else 0
 				#
@@ -175,7 +176,7 @@ class main_BCQ():
 				# 	done_float = info[1]
 
 				# Store data in replay buffer
-				replay_buffer.add(state, action, next_state, reward, done_float, done, episode_start)
+				replay_buffer.add(state, action, next_state, norm_reward, done_float, done, episode_start)
 				state = copy.copy(next_state)
 				episode_start = False
 
@@ -203,10 +204,12 @@ class main_BCQ():
 				if evaluations[-1]>best_eval or best_eval == 0:
 					best_eval = evaluations[-1]
 					policy0.save(f"./models/{setting}")
+				# else:
+				# 	policy0.save(f"./models/actual_policy_{t}_{setting}")
 
 		# Save final policy
-		if self.train_behavioral:
-			policy0.save(f"./models/{setting}")
+		# if self.train_behavioral:
+			# policy0.save(f"./models/{setting}")
 
 # On enlève le else, on sauvegarde le replay buffer dans tous les cas pour voir ce qu'il s'y passe
 		# else:

@@ -37,8 +37,8 @@ class Interact():
     def _get_frac(self):
         if self.log == 1:
             # self.frac_random = 0.6
-            self.frac_rule = 0.1
-            self.frac_pretrain = 0.9
+            self.frac_rule = 0.3
+            self.frac_pretrain = 0.7
             self.frac_pretrain_exp = self.frac_pretrain
             self.epsilon = 0.
         elif self.log == 2:

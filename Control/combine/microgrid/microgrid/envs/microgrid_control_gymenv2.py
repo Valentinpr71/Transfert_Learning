@@ -74,7 +74,7 @@ class microgrid_control_gym(gym.Env):
         self.battery_size = dim[1]
         self.battery_eta = 0.9
 
-        self.hydrogen_max_power = 1.1
+        self.hydrogen_max_power = 2.1
         self.hydrogen_elec_eta = .65  # electrolyser eta
         self.hydrogen_PAC_eta = .5  # PAC eta
         self.info = [0, 0, 0]
@@ -140,8 +140,9 @@ class microgrid_control_gym(gym.Env):
                     Energy_needed_from_battery / self.battery_size) * self.battery_eta) == 1. and self.sell_to_grid:
                 # If the battery is full and there is a surplus of energy, sell it to the grid at 0.5€ per kW. As the (mean of production is 1.5 kW), we define self.ppc_power_constraint as the PCC threshold
                 if self.ppc_power_constraint == None:
-                    reward -= (self._last_ponctual_observation[
-                                   0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1) * 0.5  # 27 juin : J'ai multiplié par eta plutot que de diviser et rajouté un -1 pour ce qui concerne le surplus d'énergie
+                    # reward -= (self._last_ponctual_observation[
+                    #                0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1) * 0.5  # 27 juin : J'ai multiplié par eta plutot que de diviser et rajouté un -1 pour ce qui concerne le surplus d'énergie # octobre 22: pas sûr pour le -1 (analyse dim)
+                    reward -= (-1*Energy_needed_from_battery) - ((1.0*self.battery_size-(self._last_ponctual_observation[0]*self.battery_size))/self.battery_eta) #octobre : R = energy needed -(taille batt -(energie)) pour n'avoir que le surplus on divise par eta car on ne pénalise pas l'énergie perdu dans le rendement de charge
                     self.info[2] = 0.
                     self.energy_sold.append(self._last_ponctual_observation[
                                                 0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1)  # 27 juin : idem
@@ -151,11 +152,11 @@ class microgrid_control_gym(gym.Env):
                     if threshold == self.ppc_power_constraint:  # If the surplus>PCC max power
                         self.info[2] = (self._last_ponctual_observation[
                                             0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1) - self.ppc_power_constraint  # 27 juin : idem
-                        reward -= self.ppc_power_constraint * 0.5
+                        reward -= self.ppc_power_constraint #* 0.5
                         self.energy_sold.append(self.ppc_power_constraint)
                     else:
                         reward -= (self._last_ponctual_observation[
-                                       0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1) * 0.5  # 27juin:idem
+                                       0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1) #* 0.5  # 27juin:idem
                         self.info[2] = 0.
                         self.energy_sold.append(self._last_ponctual_observation[
                                                     0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1)  # 27 juin:idem

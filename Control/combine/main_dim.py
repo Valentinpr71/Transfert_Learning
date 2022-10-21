@@ -10,7 +10,7 @@ import torch
 if __name__ == "__main__":
     dim_num_iteration=5
     dim_boundaries = {'PV': {'low': 0, 'high': 12}, 'batt': {'low': 0, 'high': 15}}
-    distance_euclidienne = 4
+    distance_euclidienne = 1
     nb_voisins = 1
     manager = Dim_manager(distance=distance_euclidienne,nb_voisins=nb_voisins)
     import_data = Import_data(mode="train")
@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     ### Arguments ne variant pas pour le main BCQ:
     env = "MicrogridControlGym-v0"
-    seed = 0
+    seed = 1
     max_timestep = 1e6  # Nombre d'iteration si generate buffer ou train_behavioral. C'est le nombre de tuples utilisés
     buffer_name = "Essai_0" #préfixe au nom du fichier
     BCQ_threshold = 0.3 #tau expliqué sur le README pour Discrete BCQ
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     for i in range(dim_num_iteration):
         print("HERE WE GOOO")
-        cheat_dim_list = [np.array([10.0,11.0]),np.array([10.0,14.0]),np.array([11.0,13.0]), np.array([9.0, 10.0]),np.array([9.0,11.0]),np.array([10.0,9.0])] #Ajouté uniquement dans un but d'analyse de l'algo au début (on force le nb de voisin a etre petit)
+        cheat_dim_list = [np.array([7.0,2.0]),np.array([8.0,2.0]),np.array([9.0,2.0]),np.array([10.0,2.0]),np.array([12.0, 2.0]),np.array([6.0,9.0])] #Ajouté uniquement dans un but d'analyse de l'algo au début (on force le nb de voisin a etre petit)
         # dim = np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])),
         #                 float(np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))])
         dim = cheat_dim_list[i]
