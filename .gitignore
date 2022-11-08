@@ -5,7 +5,7 @@ __pycache__/
 .Control/agents/tricks
 .Control/combine/results/
 .Control/combine/models/
-Control/combine/buffers/
+Control/combine/buffers
 .Control/combine/runs/
 # C extensions
 *.so
