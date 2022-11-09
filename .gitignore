@@ -517,6 +517,6 @@ fabric.properties
 
 #Project specific
 *.npy
-!data/*.npy
+!*/data/*.npy
 *_Q
 *_optimizer
