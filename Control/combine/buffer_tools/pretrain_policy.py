@@ -13,7 +13,7 @@ class Pretrain():
     - dicto : dictionnaire numéroté contenant le nom des fichiers contenant les agents entraînés. AUTRE MANIÈRE plus intéressante: la clé est le hashkey et la valeur le dimensionnement. le dimensionnement doit être un np.array
     - dim : dimension de l'environnement sur lequel les predictions doivent être faites. De la forme d'une liste de flottants
     """
-    def __init__(self, dicto, replay_buffer, data=[], low_noise_p=0.01, rand_action_p=0.3, policy = None):
+    def __init__(self, dicto = None, replay_buffer=None, data=[], low_noise_p=0.01, rand_action_p=0.3, policy = None):
         self.dicto=dicto
         self.dim=None
         self.model=None
@@ -26,11 +26,16 @@ class Pretrain():
 
     def _load_agent(self,filename):
         setting = f"MicrogridControlGym-v0_"+filename
-        self.env = gym.make("microgrid:MicrogridControlGym-v0", dim=self.dim, data=self.data)
+        self.env = gym.make("MicrogridControlGym-v0", dim=self.dim, data=self.data)
         ## modifs pour intégrer pytorch au load de l'agent pour faire comme avec le train_behavioral de BCQ
         self.policy.load(f"./models/{setting}")
         # self.model =
         # self.model = DQN.load("Batch_RL_results/"+filename+"/best_model.zip", env=self.env)
+
+## Créée en novembre pour voir ce qu'il se passe dans un épisode d'intéraction d'un agent entraîné
+    def eval_policy(self, state):
+        action = self.policy.select_action(np.array(state),eval = True)
+        return action
 
     def tuples_pretrain(self, num_episode, epsilon):
         count=0
