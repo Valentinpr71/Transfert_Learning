@@ -1,2 +1,0 @@
-target_update_frequency = 4379, autres paramtètres comme plus tot dans la journée, 
-comme le dernier en date dans "chelou" mais avec seulement 1e5 en max_timestep et seulement 880 en eval_freq.
