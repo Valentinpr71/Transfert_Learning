@@ -43,7 +43,7 @@ def plot_batt_SOC(batt_SOC,dim):
     plt.xlabel(label_x)
     plt.ylabel(label_y_SOC)
     plt.title(f"SOC de la batterie électro-chimique en fonction du temps durant le test de la politique sur le dimensionnement {dim} (kWh)")
-    plt.plot(df['Date'],batt_ener)
+    plt.plot(df['Date'], batt_ener)
     plt.show()
 
 def plot_conso(conso):
@@ -54,7 +54,33 @@ def plot_conso(conso):
     plt.xlabel(label_x)
     plt.ylabel(label_y_SOC)
     plt.title(f"Demande de consommation en fonction du temps (kW)")
-    plt.plot(df['Date'],conso)
+    plt.plot(df['Date'], conso)
+    plt.show()
+
+
+def plot_conso_daily_permonth(conso):
+    days_per_month2010 = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    label_x = 'Date'
+    label_y_PV = "Energy produite par les panneaux PV"
+    df = pd.DataFrame()
+    df['Date'] = pd.date_range('2010-01-01', periods=8760, freq='H').values
+    conso_daily = []
+    #somme par jour
+    for i in range(356):
+        conso_daily = np.append(conso_daily, np.sum(conso[i*24:(i * 24) + (24)]))
+    # net=np.append(net,net[-1])
+    conso_monthly = []
+    for i in range(len(days_per_month2010)-1):
+        conso_monthly = np.append(conso_monthly, np.mean(conso_daily[sum(days_per_month2010[0:i]):sum(days_per_month2010[0:i+1])]))
+    conso_monthly = np.append(conso_monthly, conso_monthly[-1])
+    conso_lin = []
+    for i in range(len(conso_monthly)):
+        conso_lin = np.append(conso_lin,np.linspace(conso_monthly[i-1],conso_monthly[i],days_per_month2010[i]*24))
+    print("conso_month : ", len(conso_monthly))
+    plt.xlabel(label_x)
+    plt.ylabel(label_y_PV)
+    plt.title(f"Consommation (moyenne quotidienne) par mois (kW)")
+    plt.plot(df['Date'], conso_lin)
     plt.show()
 
 def plot_prodPV(prodPV, dim):
@@ -65,7 +91,31 @@ def plot_prodPV(prodPV, dim):
     plt.xlabel(label_x)
     plt.ylabel(label_y_SOC)
     plt.title(f"Production PV lors d'un épisode sur le dimensionnement {dim} (kW)")
-    plt.plot(df['Date'],prodPV)
+    plt.plot(df['Date'], prodPV)
+    plt.show()
+
+def plot_prodPV_daily_permonth(prodPV, dim):
+    days_per_month2010 = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    label_x = 'Date'
+    label_y_PV = "Energy produite par les panneaux PV"
+    df = pd.DataFrame()
+    df['Date'] = pd.date_range('2010-01-01', periods=8760, freq='H').values
+    prod_daily = []
+    #somme par jour
+    for i in range(356):
+        prod_daily = np.append(prod_daily, np.sum(prodPV[i*24:(i * 24) + (24)]))
+    # net=np.append(net,net[-1])
+    prod_monthly = []
+    for i in range(len(days_per_month2010)-1):
+        prod_monthly = np.append(prod_monthly, np.mean(prod_daily[sum(days_per_month2010[0:i]):sum(days_per_month2010[0:i+1])]))
+    prod_monthly = np.append(prod_monthly, prod_monthly[-1])
+    prod_lin = []
+    for i in range(len(prod_monthly)):
+        prod_lin = np.append(prod_lin,np.linspace(prod_monthly[i-1],prod_monthly[i],days_per_month2010[i]*24))
+    plt.xlabel(label_x)
+    plt.ylabel(label_y_PV)
+    plt.title(f"Production PV (moyenne quotidienne) par mois sur le dimensionnement {dim} (kW)")
+    plt.plot(df['Date'], prod_lin)
     plt.show()
 
 def plot_net_demand(net_demand, dim):
@@ -76,7 +126,79 @@ def plot_net_demand(net_demand, dim):
     plt.xlabel(label_x)
     plt.ylabel(label_y_SOC)
     plt.title(f"Demande nette (demande - production PV) lors d'un épisode sur le dimensionnement {dim} (kWh)")
-    plt.plot(df['Date'],net_demand)
+    plt.plot(df['Date'], net_demand)
+    plt.show()
+
+def plot_net_demand_daily_per_month(net_demand, dim):
+    days_per_month2010 = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    label_x = 'Date'
+    label_y_SOC = "Energy stockée dans la batterie"
+    df = pd.DataFrame()
+    df['Date'] = pd.date_range('2010-01-01', periods=8760, freq='H').values
+    net = []
+    #somme par jour
+    for i in range(356):
+        net = np.append(net, np.sum(net_demand[i*24:(i * 24) + (24)]))
+    # net=np.append(net,net[-1])
+    net_monthly = []
+    for i in range(len(days_per_month2010)-1):
+        net_monthly = np.append(net_monthly, np.mean(net[sum(days_per_month2010[0:i]):sum(days_per_month2010[0:i+1])]))
+    net_monthly = np.append(net_monthly, net_monthly[-1])
+    net_demand_lin = []
+    for i in range(len(net_monthly)):
+        net_demand_lin = np.append(net_demand_lin,np.linspace(net_monthly[i-1],net_monthly[i],days_per_month2010[i]*24))
+    plt.xlabel(label_x)
+    plt.ylabel(label_y_SOC)
+    plt.title(f"Demande nette (demande - production PV) moyenne quotidienne sur un mois pour le dimensionnement {dim} (kWh)")
+    plt.plot(df['Date'], net_demand_lin)
+    plt.show()
+
+def daily_boxplot_net_daily_permonth(net_demand, dim):
+    days_per_month2010 = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    label_x = 'Date (Mois)'
+    label_y_SOC = "Demande journalière cumulée (kWh)"
+    df = pd.DataFrame()
+    df['Date'] = pd.date_range('2010-01-01', periods=8760, freq='H').values
+    net = []
+    # somme par jour
+    for i in range(356):
+        net = np.append(net, np.sum(net_demand[i * 24:(i * 24) + (24)]))
+    # net=np.append(net,net[-1])
+    net_monthly = []
+    for i in range(len(days_per_month2010)):
+        net_monthly.append(net[sum(days_per_month2010[0:i]):sum(days_per_month2010[0:i + 1])])
+
+    # net_monthly = np.append(net_monthly, net_monthly[-1])
+    # net_demand_lin = []
+    # for i in range(len(net_monthly)):
+    #     net_demand_lin = np.append(net_demand_lin,
+    #                                np.linspace(net_monthly[i - 1], net_monthly[i], days_per_month2010[i] * 24))
+    tick = ["Juin","Juil","Aout","Sept","Oct","Nov","Dec","Jan","Fev","Mars","Avril","Mai"]
+    plt.xlabel(label_x)
+    plt.ylabel(label_y_SOC)
+    plt.title(
+        f"Demande nette (demande - production PV) moyenne quotidienne sur un mois pour le dimensionnement {dim} (kWh)")
+    plt.boxplot(net_monthly)
+    plt.xticks([1,2,3,4,5,6,7,8,9,10,11,12],tick)
+    plt.show()
+
+def plot_net_demand_lin(net_demand, dim):
+    days_per_month2010 = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    label_x = 'Date'
+    label_y_SOC = "Energy stockée dans la batterie"
+    df = pd.DataFrame()
+    df['Date'] = pd.date_range('2010-01-01', periods=8760, freq='H').values
+    net = []
+    for i in range(12):
+        net = np.append(net, np.sum(net_demand[i * (24 * 30):(i * 24 * 30) + (24 * 30)]))
+    net=np.append(net,net[-1])
+    net_demand_lin = []
+    for i in range(len(net)-1):
+        net_demand_lin = np.append(net_demand_lin,np.linspace(net[i-1],net[i],days_per_month2010[i]*24))
+    plt.xlabel(label_x)
+    plt.ylabel(label_y_SOC)
+    plt.title(f"Demande nette (demande - production PV) lors d'un épisode sur le dimensionnement {dim} (kWh)")
+    plt.plot(df['Date'], net_demand_lin)
     plt.show()
 
 def multiplots(info, batt_SOC, net_demand, dim):
@@ -243,7 +365,8 @@ if __name__ == "__main__":
     print("Manager dim : ", manager.dim)
     # eval_env, _, _ = utils.make_env(env, manager)
     tuple_list = {"state":[],"action":[],'reward':[]}
-    obs, done = env.reset(), False
+    obs, production, consumption= env.reset()
+    done = False
     while not done:
         state = obs
         action = tuples.eval_policy(state)
@@ -262,10 +385,18 @@ if __name__ == "__main__":
     Tableur = env.render_to_file
     if "conso" in args.plot:
         plot_conso(consumption)
+    if "daily_conso_permonth" in args.plot:
+        plot_conso_daily_permonth(consumption)
     if "prodPV" in args.plot:
         plot_prodPV(production,manager.dim)
-    if "net" in args.plot:
-        plot_net_demand(consumption-production, manager.dim)
+    if "net1" in args.plot:
+        plot_net_demand_lin(consumption-production, manager.dim)
+    if "daily_net_permonth" in args.plot:
+        plot_net_demand_daily_per_month(consumption-production, manager.dim)
+    if "daily_PV_permonth" in args.plot:
+        plot_prodPV_daily_permonth(production, manager.dim)
+    if 'boxplot' in args.plot:
+        daily_boxplot_net_daily_permonth(consumption-production,manager.dim)
     if args.multiplot:
         multiplots(info, tuple_list['state'], consumption-production, manager.dim)
     print(manager.dim)

@@ -212,7 +212,9 @@ class microgrid_control_gym(gym.Env):
 
         self.hydrogen_storage = [0.]
         self.info = {}
-        return np.array([1., 0., 0., self.dist_equinox[self.counter - 1] / 182])
+        #nov 2022 : on return aussi les données pour pouvoir les visualiser en changeant le point de départ
+        # print(np.array([1., 0., 0., self.dist_equinox[self.counter - 1] / 182]), self.production, self.consumption)
+        return(np.array([1., 0., 0., self.dist_equinox[self.counter - 1] / 182]))#, self.production, self.consumption)
 
     def render(self):
         pass

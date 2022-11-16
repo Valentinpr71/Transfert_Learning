@@ -142,6 +142,7 @@ class main_BCQ():
 		# Interact with the environment for max_timesteps
 		if self.generate_buffer:
 			inter.build_buffer()
+		patience = 0
 		for t in range(int(self.max_timestep)):
 
 			episode_timesteps += 1
@@ -199,11 +200,15 @@ class main_BCQ():
 
 			# Evaluate episode
 			if self.train_behavioral and (t + 1) % parameters["eval_freq"] == 0:
+				patience += 1
 				evaluations.append(self.eval_policy(policy0))
 				np.save(f"./results/{setting}", evaluations)
 				if evaluations[-1]>best_eval or best_eval == 0:
+					patience = 0
 					best_eval = evaluations[-1]
 					policy0.save(f"./models/{setting}")
+				if patience>=15:
+					break
 				# else:
 				# 	policy0.save(f"./models/actual_policy_{t}_{setting}")
 
@@ -258,9 +263,7 @@ class main_BCQ():
 		episode_num = 0
 		done = True
 		training_iters = 0
-
 		while training_iters < self.max_timestep:
-
 			for _ in range(int(parameters["eval_freq"])):
 				policy.train(replay_buffer)
 
@@ -327,6 +330,7 @@ class main_BCQ():
 			# if not enought close µgrid size, train from scratch in on-line setup
 			self.train_behavioral = True
 			self.generate_buffer = False
+			self.cass = False
 			print("generate_buffer",self.generate_buffer,"train_behavioral", self.train_behavioral)
 			self.interact_with_environment(env, replay_buffer, False, device)
 			end = time.time()
