@@ -1,0 +1,61 @@
+from buffer_tools.hash_manager import Dim_manager
+from discrete_BCQ import utils
+from microgrid.envs.import_data import Import_data
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+dim = [15.,10.]
+manager = Dim_manager(1,1)
+import_data = Import_data(mode="train")
+consumption = import_data.consumption()
+consumption_norm = import_data._consumption_norm()
+manager.add_data_cons(data_cons=consumption, data_cons_norm=consumption_norm)
+
+env = "MicrogridControlGym-v0"
+seed = 1
+max_timestep = 1e6  # Nombre d'iteration si generate buffer ou train_behavioral. C'est le nombre de tuples utilisés
+manager._dim(dim)
+manager.choose_parents()
+manager.add_to_dicto()
+production_norm = import_data._production_norm(PV=dim[0])
+production = import_data.production()
+manager.add_data_prod(data_prod=production, data_prod_norm=production_norm)
+print(max(production-consumption))
+env, state_dim, num_actions = utils.make_env(env, manager)
+production = env.production
+consumption = env.consumption
+
+
+def daily_boxplot_net_daily_permonth(net_demand, dim):
+    days_per_month2010 = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    label_x = 'Date (Mois)'
+    label_y_SOC = "Demande nette journalière cumulée (kWh)"
+    df = pd.DataFrame()
+    df['Date'] = pd.date_range('2010-01-01', periods=8760, freq='H').values
+    net = []
+    # somme par jour
+    for i in range(356):
+        net = np.append(net, np.sum(net_demand[i * 24:(i * 24) + (24)]))
+    # net=np.append(net,net[-1])
+    net_monthly = []
+    for i in range(len(days_per_month2010)):
+        net_monthly.append(net[sum(days_per_month2010[0:i]):sum(days_per_month2010[0:i + 1])])
+
+    # net_monthly = np.append(net_monthly, net_monthly[-1])
+    # net_demand_lin = []
+    # for i in range(len(net_monthly)):
+    #     net_demand_lin = np.append(net_demand_lin,
+    #                                np.linspace(net_monthly[i - 1], net_monthly[i], days_per_month2010[i] * 24))
+    tick = ["Juin","Juil","Aout","Sept","Oct","Nov","Dec","Jan","Fev","Mars","Avril","Mai"]
+    plt.xlabel(label_x)
+    plt.ylabel(label_y_SOC)
+    plt.title(
+        f"Demande nette (demande - production PV) moyenne quotidienne sur un mois pour le dimensionnement PV={dim[0]} (kWh)")
+    plt.boxplot(net_monthly)
+    plt.xticks([1,2,3,4,5,6,7,8,9,10,11,12],tick)
+    plt.show()
+    
+daily_boxplot_net_daily_permonth(consumption-production,manager.dim)
+

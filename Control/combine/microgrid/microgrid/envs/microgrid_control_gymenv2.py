@@ -12,7 +12,7 @@ class microgrid_control_gym(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, plot_every=10, ppc=None, sell_to_grid=True, total_timesteps=8760 * 10, month=[], dim=[12., 15.],
-                 data=[],date_initiale="2010-06-21"):  # ,month=[9,10,11,12,1,2]):
+                 data=[], date_initiale="2022-01-01"):#,date_initiale="2010-06-21"):  # ,month=[9,10,11,12,1,2]):
         print("dim :  eff", dim)
         self._max_episode_steps = 8760
         self.month = month
@@ -37,13 +37,14 @@ class microgrid_control_gym(gym.Env):
         #nov2022 : Ajout de l'aspect "Date initiale" de la simulation
         dates2 = pd.date_range(date_initiale, periods=8760, freq='H').values
         datetime3 = pd.DatetimeIndex(dates2)
-        gen = (datetime3[i].replace(year=2010) for i in range(len(datetime3)))
+        year = int(date_initiale[:4])
+        gen = (datetime3[i].replace(year=year) for i in range(len(datetime3)))
         ind_new = pd.DatetimeIndex(gen)
         # Définition de la variable observable "distance à l'équinoxe d'été"
-        dates = pd.date_range('2010-01-01', periods=8760, freq='H').values
+        dates = pd.date_range(str(year)+'-01-01', periods=8760, freq='H').values
         datetime2 = pd.DatetimeIndex(dates)
-        a = (datetime2 - datetime.datetime(2010, 6, 21)).days
-        b = (datetime2 - datetime.datetime(2011, 6, 21)).days
+        a = (datetime2 - datetime.datetime(year, 6, 21)).days
+        b = (datetime2 - datetime.datetime(year+1, 6, 21)).days
         ab = pd.DataFrame()
         ab['a'] = a
         ab['b'] = b
@@ -90,10 +91,10 @@ class microgrid_control_gym(gym.Env):
         print('LONGUEUR D UN EPISODE:', self._max_episode_steps)
 
         # Dimensionnement des batteries court et long terme
-        self.battery_size = dim[1]
+        self.battery_size = dim[1]*1000
         self.battery_eta = 0.9
 
-        self.hydrogen_max_power = 2.1
+        self.hydrogen_max_power = 2.1*1000
         self.hydrogen_elec_eta = .65  # electrolyser eta
         self.hydrogen_PAC_eta = .5  # PAC eta
         ##self.info={"Timestep":[0],"Reward":[0],"Energy Surplus":[0]}

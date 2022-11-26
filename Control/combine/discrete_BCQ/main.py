@@ -25,8 +25,8 @@ class main_BCQ():
 
 		self.regular_parameters = {
 			# multi_env
-			"nb_parents": 2,
-			"euclidian_dist": 4,
+			"nb_parents": 1,
+			"euclidian_dist": 1,
 			# Exploration
 			### Modifié pour l'abaisser dans les épisodes en low noise
 			"start_timesteps": 8760, #nombre de step avant de ne plus prendre que des actions aléatoires

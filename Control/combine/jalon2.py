@@ -156,7 +156,7 @@ def plot_net_demand_daily_per_month(net_demand, dim):
 def daily_boxplot_net_daily_permonth(net_demand, dim):
     days_per_month2010 = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     label_x = 'Date (Mois)'
-    label_y_SOC = "Demande journalière cumulée (kWh)"
+    label_y_SOC = "Demande nette journalière cumulée (kWh)"
     df = pd.DataFrame()
     df['Date'] = pd.date_range('2010-01-01', periods=8760, freq='H').values
     net = []
@@ -180,6 +180,7 @@ def daily_boxplot_net_daily_permonth(net_demand, dim):
         f"Demande nette (demande - production PV) moyenne quotidienne sur un mois pour le dimensionnement {dim} (kWh)")
     plt.boxplot(net_monthly)
     plt.xticks([1,2,3,4,5,6,7,8,9,10,11,12],tick)
+    plt.savefig(f"results/boxplot_{manager.dim[0]}_{manager.dim[1]}.png")
     plt.show()
 
 def plot_net_demand_lin(net_demand, dim):
@@ -204,7 +205,7 @@ def plot_net_demand_lin(net_demand, dim):
 def multiplots(info, batt_SOC, net_demand, dim):
 
     df = pd.DataFrame()
-    df['Date'] = pd.date_range('2010-01-01', periods=8760, freq='H').values
+    df['Date'] = pd.date_range('2010-06-21', periods=8760, freq='H').values
     days_per_month2010 = [31,28,31,30,31,30,31,31,30,31,30,31]
 # Traitement du niveau de charge de la batterie
     batt_ener = list(x * manager.dim[1] for x in batt_SOC)
@@ -248,7 +249,10 @@ def multiplots(info, batt_SOC, net_demand, dim):
     par2.yaxis.label.set_color(p3.get_color())
 
     fig.tight_layout()
+    fig.set_size_inches((15, 11), forward=False)
+    plt.savefig(f"results/multiplot_{manager.dim[0]}_{manager.dim[1]}.png")
     plt.show()
+
 
 if __name__ == "__main__":
     is_atari = False
@@ -365,7 +369,9 @@ if __name__ == "__main__":
     print("Manager dim : ", manager.dim)
     # eval_env, _, _ = utils.make_env(env, manager)
     tuple_list = {"state":[],"action":[],'reward':[]}
-    obs, production, consumption= env.reset()
+    obs = env.reset()
+    production = env.production
+    consumption = env.consumption
     done = False
     while not done:
         state = obs

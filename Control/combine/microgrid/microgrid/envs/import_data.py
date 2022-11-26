@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 class Import_data():
     def __init__(self, mode="train"):
@@ -28,3 +29,20 @@ class Import_data():
 
     def minmax(self):
         return min(self.consumption()),max(self.consumption()),min(self.production()), max(self.production())
+
+    def data_cons_AutoCalSOl(self):
+        data_1kW = pd.read_csv("data/Demo_autoconso2.csv")
+        data_1kW['Dates'] = pd.date_range('2022-01-01', periods=8760, freq='H').values
+        data_1kW.set_index(data_1kW['Dates'], inplace=True)
+        self.data_1kW = data_1kW
+        self.consumption_norm = data_1kW.Consumption / data_1kW.Consumption.max()
+        return self.consumption_norm, data_1kW.Consumption
+
+    def data_prod_AutoCalSol(self, dimPV, dimPVmax):
+        data_dim = self.data_1kW.copy()
+        data_dim_max = self.data_1kW.copy()
+        data_dim["ProdPV"] = data_dim["ProdPV"] * dimPV
+        data_dim_max["ProdPV"] = data_dim_max["ProdPV"] * dimPVmax
+        self.production_norm = data_dim.ProdPV/data_dim_max.ProdPV.max()
+        production = data_dim.ProdPV
+        return self.production_norm, production

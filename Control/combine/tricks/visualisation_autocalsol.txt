@@ -1,0 +1,97 @@
+from discrete_BCQ import utils
+import gym
+import numpy as np
+import matplotlib.pyplot as plt
+from discrete_BCQ.DQN import DQN
+from buffer_tools.hash_manager import Dim_manager
+
+
+
+
+
+
+regular_parameters = {			# multi_env
+			"nb_parents": 2,
+			"euclidian_dist": 4,
+			# Exploration
+			### Modifié pour l'abaisser dans les épisodes en low noise
+			"start_timesteps": 8760, #nombre de step avant de ne plus prendre que des actions aléatoires
+			"initial_eps": 0.01,
+			"end_eps": 0.1,
+			"eps_decay_period": 1,
+			# Evaluation
+			#"eval_freq": 8759,#Attention c'est en nombre de step et pas en nombre d'épisodes
+			"eval_freq": 8760,
+			"eval_eps": 0.005,
+			# Learning
+			"discount": 0.9,
+			"buffer_size": 1e6,
+			"batch_size": 256,
+			"optimizer": "Adam",
+			"optimizer_parameters": {
+				"lr": 1e-8
+			},
+			"train_freq": 1,
+			"polyak_target_update": False,
+			"target_update_freq": 70000,
+			#tau passé de 0.005 à 0.9
+			"tau": 0.005
+		}
+
+manager = Dim_manager(4,2)
+manager._dim([10.,10.])
+dim = manager.dim
+
+from microgrid.envs.import_data import Import_data
+
+import_data = Import_data(mode='train')
+consumption_norm, consumption = import_data.data_cons_AutoCalSOl()
+production_norm, production = import_data.data_prod_AutoCalSol(dimPV=dim[0], dimPVmax=17)
+#manager.add_data_prod(data_prod=production, data_prod_norm=production_norm)
+#manager.add_data_cons(data_cons=consumption, data_cons_norm=consumption_norm)
+data = [consumption, consumption_norm, production, production_norm]
+env = gym.make("microgrid:MicrogridControlGym-v0", dim=dim, data=data)
+manager.data = data
+env, state_dim, num_action = utils.make_env("microgrid:MicrogridControlGym-v0", manager)
+writer = None
+device = "cpu"
+parameters  = regular_parameters
+policy = DQN(
+    False,
+    num_action,
+    state_dim,
+    device,
+    parameters["discount"],
+    parameters["optimizer"],
+    parameters["optimizer_parameters"],
+    parameters["polyak_target_update"],
+    parameters["target_update_freq"],
+    parameters["tau"],
+    0,
+    0,
+    1,
+    0,
+    writer,
+    parameters['train_freq']
+)
+
+policy.load(f"./models/MicrogridControlGym-v0_{manager._create_hashkey()}")
+
+list_of_actions = np.array([])
+obs = env.reset()
+is_done=False
+while not is_done:
+	action = policy.select_action(np.array(obs))
+	states = obs
+	obs, reward, is_done, info = env.step(action)
+	list_of_actions = np.append(list_of_actions,action)
+a = np.load(f"./results/MicrogridControlGym-v0_{manager._create_hashkey()}.npy")
+np.save(f"./models/list_action_{dim}.npy",list_of_actions)
+plt.plot(np.linspace(0,len(a),len(a)),a)
+label_x = "Nombre d'épisodes"
+label_y = "Récompense cumulée sur 1 épisode"
+plt.title(f"{manager.dim} en comportemental")
+plt.xlabel(label_x)
+plt.ylabel(label_y)
+plt.savefig(f"results/reward_{int(dim[0])}_{int(dim[1])}.png")
+manager._create_hashkey()
