@@ -36,16 +36,19 @@ class main_BCQ():
 			# Evaluation
 			#"eval_freq": 8759,#Attention c'est en nombre de step et pas en nombre d'épisodes
 			"eval_freq": 8760,
-			"eval_eps": 0.005,
+			"eval_eps": 0.001,
 			# Learning
 			"discount": 0.75,
 			"buffer_size": 1e6,
+			# "batch_size": 64,
 			"batch_size": 256,
 			"optimizer": "Adam",
 			"optimizer_parameters": {
 				"lr": 1e-3
+				# "lr": 3e-4
 			},
 			"train_freq": 1,
+			# "polyak_target_update": False,
 			"polyak_target_update": False,
 			"target_update_freq": 70000,
 			#tau passé de 0.005 à 0.9
@@ -263,16 +266,19 @@ class main_BCQ():
 		episode_num = 0
 		done = True
 		training_iters = 0
-		while training_iters < self.max_timestep:
-			for _ in range(int(parameters["eval_freq"])):
+		patience = 0
+		while training_iters < self.max_timestep and patience < 20:
+			# for _ in range(int(parameters["eval_freq"])):
+			for _ in range(int(640)):
 				policy.train(replay_buffer)
 
 			evaluations.append(self.eval_policy(policy))
 			np.save(f"./results/BCQ_{setting}", evaluations)
 			if evaluations[-1] > best_eval or best_eval == 0:
+				patience = 0
 				best_eval = evaluations[-1]
 				policy.save(f"./models/{setting}")
-
+			patience +=1
 			training_iters += int(parameters["eval_freq"])
 			print(f"Training iterations: {training_iters}")
 			print("END OF A BCQ TRAINING LOOP")
@@ -286,7 +292,6 @@ class main_BCQ():
 	def eval_policy(self, policy, eval_episodes=1):
 		print('MANAGER.DIM : ', self.manager)
 		eval_env, _, _ = utils.make_env(self.env, manager=self.manager)
-		eval_env.seed(self.seed + 100)
 		action_list = np.array([])
 		avg_reward = 0.
 		for _ in range(eval_episodes):
@@ -295,7 +300,6 @@ class main_BCQ():
 			while not done:
 				i+=1
 				action = policy.select_action(np.array(state), eval=True)
-				# action = eval_env.action_space.sample()
 				action_list = np.append(action_list, action)
 				state, reward, done, _ = eval_env.step(action)
 				avg_reward += reward
@@ -311,6 +315,7 @@ class main_BCQ():
 
 
 	def Iterate(self, temps):
+		# np.random.seed(seed=int(time.time()))
 		len_episode = 8760
 		env, self.state_dim, self.num_actions = utils.make_env(self.env, self.manager)
 		parents = self.manager.choose_parents()

@@ -68,7 +68,7 @@ class discrete_BCQ(object):
 		polyak_target_update=False,
 		target_update_frequency=8e3,
 		tau=0.005,
-		initial_eps = 1,
+		initial_eps = 0.001,
 		end_eps = 0.001,
 		eps_decay_period = 25e4,
 		eval_eps=0.001,
@@ -85,9 +85,13 @@ class discrete_BCQ(object):
 
 		self.discount = discount
 
+
+
 		# Target update rule
 		self.maybe_update_target = self.polyak_target_update if polyak_target_update else self.copy_target_update
 		self.target_update_frequency = target_update_frequency
+		### AJOUT POUR TEST (DEC 2022):
+		self.target_update_frequency = 20000
 		self.tau = tau
 
 		# Decay for eps
@@ -107,11 +111,11 @@ class discrete_BCQ(object):
 		self.iterations = 0
 
 		#Ajouts de VP
-		self.writter = writer
+		# self.writter = writer
 		self.train_freq = train_freq
 
 
-	def select_action(self, state, eval=False):
+	def select_action(self, state, eval=True):
 		# Select action according to policy with probability (1-eps)
 		# otherwise, select random action
 		if np.random.uniform(0,1) > self.eval_eps:
@@ -151,7 +155,8 @@ class discrete_BCQ(object):
 		i_loss = F.nll_loss(imt, action.reshape(-1))
 
 		Q_loss = q_loss + i_loss + 1e-2 * i.pow(2).mean()
-		self.writter.add_scalar("Loss/train", Q_loss, replay_buffer.crt_size/self.train_freq)
+		# self.writter.add_scalar("Loss/train", Q_loss, replay_buffer.crt_size/self.train_freq)
+
 		# Optimize the Q
 		self.Q_optimizer.zero_grad()
 		Q_loss.backward()

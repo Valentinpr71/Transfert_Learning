@@ -1,8 +1,8 @@
-from discrete_BCQ import utils
+ from discrete_BCQ import utils
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
-from discrete_BCQ.discrete_BCQ import discrete_BCQ
+from discrete_BCQ.DQN import DQN
 from buffer_tools.hash_manager import Dim_manager
 
 
@@ -45,24 +45,24 @@ dim = manager.dim
 from microgrid.envs.import_data import Import_data
 
 import_data = Import_data(mode='train')
-consumption_norm, consumption = import_data.data_cons_AutoCalSOl()
-production_norm, production = import_data.data_prod_AutoCalSol(dimPV=dim[0], dimPVmax=17)
+consumption_norm, consumption, production_norm, production = import_data.treat_csv(dim[0], 17, "clean_PV_GIS_2020_SARAH2.csv")
+#consumption_norm, consumption = import_data.data_cons_AutoCalSOl()
+#production_norm, production = import_data.data_prod_AutoCalSol(dimPV=dim[0], dimPVmax=17)
 #manager.add_data_prod(data_prod=production, data_prod_norm=production_norm)
 #manager.add_data_cons(data_cons=consumption, data_cons_norm=consumption_norm)
 data = [consumption, consumption_norm, production, production_norm]
 env = gym.make("microgrid:MicrogridControlGym-v0", dim=dim, data=data)
 manager.data = data
+print(manager.data)
 env, state_dim, num_action = utils.make_env("microgrid:MicrogridControlGym-v0", manager)
 writer = None
 device = "cpu"
-BCQ_threshold = 0.3
 parameters  = regular_parameters
-policy = discrete_BCQ(
+policy = DQN(
     False,
     num_action,
     state_dim,
     device,
-    BCQ_threshold,
     parameters["discount"],
     parameters["optimizer"],
     parameters["optimizer_parameters"],
@@ -89,7 +89,7 @@ while not is_done:
 	obs, reward, is_done, info = env.step(action)
 	rewards = np.append(rewards, reward)
 	list_of_actions = np.append(list_of_actions,action)
-a = np.load(f"./results/BCQ_MicrogridControlGym-v0_{manager._create_hashkey()}.npy")
+a = np.load(f"./results/MicrogridControlGym-v0_{manager._create_hashkey()}.npy")
 np.save(f"./models/list_action_{dim}.npy",list_of_actions)
 plt.plot(np.linspace(0,len(a),len(a)),a)
 label_x = "Nombre d'épisodes"

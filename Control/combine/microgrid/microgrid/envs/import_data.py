@@ -46,3 +46,16 @@ class Import_data():
         self.production_norm = data_dim.ProdPV/data_dim_max.ProdPV.max()
         production = data_dim.ProdPV
         return self.production_norm, production
+
+    def treat_csv(self, dimPV, dimPVmax, filename):
+        ##Caution, loaded data have to contain 8760 elements, and columns have to be named "ProdPV" and "Consumption". it has to be 1 kWp solar pannel production data.
+        data_1kW = pd.read_csv(f"data/{filename}")
+        data_1kW['Dates'] = pd.date_range('2022-01-01', periods=8760, freq='H').values
+        data_1kW.set_index(data_1kW['Dates'], inplace=True)
+        self.consumption_norm = data_1kW.Consumption / data_1kW.Consumption.max()
+        data_dim_max = data_1kW.copy()
+        data_dim = data_1kW.copy()
+        data_dim["ProdPV"] = data_dim["ProdPV"] * dimPV
+        data_dim_max["ProdPV"] = data_dim_max["ProdPV"] * dimPVmax
+        self.production_norm = data_dim.ProdPV/data_dim_max.ProdPV.max()
+        return self.consumption_norm, data_1kW.Consumption, self.production_norm, data_dim.ProdPV

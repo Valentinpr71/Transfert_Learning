@@ -96,7 +96,8 @@ class DQN(object):
 
 		# Select action according to policy with probability (1-eps)
 		# otherwise, select random action
-		if np.random.uniform(0,1) > eps:
+		randnumb = np.random.uniform(0,1)
+		if randnumb > eps:
 			with torch.no_grad():
 				state = torch.FloatTensor(state).reshape(self.state_shape).to(self.device)
 				return int(self.Q(state).argmax(1))

@@ -1,6 +1,7 @@
 import gym
 import pandas as pd
 import numpy as np
+import time
 import glob
 
 
@@ -14,6 +15,7 @@ class Pretrain():
     - dim : dimension de l'environnement sur lequel les predictions doivent être faites. De la forme d'une liste de flottants
     """
     def __init__(self, dicto = None, replay_buffer=None, data=[], low_noise_p=0.01, rand_action_p=0.3, policy = None):
+        self.coeff_norm = max((data[0].max()), (data[3].max()))
         self.dicto=dicto
         self.dim=None
         self.model=None
@@ -29,6 +31,8 @@ class Pretrain():
         self.env = gym.make("MicrogridControlGym-v0", dim=self.dim, data=self.data)
         ## modifs pour intégrer pytorch au load de l'agent pour faire comme avec le train_behavioral de BCQ
         self.policy.load(f"./models/{setting}")
+        print(setting)
+        print("af")
         # self.model =
         # self.model = DQN.load("Batch_RL_results/"+filename+"/best_model.zip", env=self.env)
 
@@ -44,26 +48,36 @@ class Pretrain():
             count+=low_noise_ep
         print("COUNT : ", count)
         self.pretrain_high_noise(nb_episodes_per_agent=num_episode-count)
-        self.pretrain_low_noise(nb_episode=count)
+        self.pretrain_low_noise(nb_episode=count, epsilon=epsilon)
 
 
 
-    def pretrain_low_noise(self, nb_episode=0):
+    def pretrain_low_noise(self, nb_episode=0, epsilon=0):
+        # np.random.seed(seed=int(time.time()))
         #Déclanche le remplissage du buffer pour le nombre d'épisodes avec low_noise, donc une exploration faible (proba espilon)
+        rewards = 0
         for i in range(nb_episode):
+            print("rewards : ", rewards)
             j = 0
             print('ET DE UN EPISODE EN low NOISE')
             obs = self.env.reset()
             episode_start = True
             is_done = False
+            rewards = 0
+            list_action = []
             while not is_done:
                 #modifié le 8 sept pour adapter a bcq
-                action = self.policy.select_action(np.array(obs))
+                if np.random.rand()<epsilon:
+                    action = self.env.action_space.sample()
+                else:
+                    action = self.policy.select_action(np.array(obs), eval = True)
                 states = obs
                 obs, reward, is_done, info = self.env.step(action)
                 # rewards_episode[j-1] = reward
-                self.replay_buffer.add(states, action, obs, reward, float(is_done), is_done, episode_start)
+                self.replay_buffer.add(states, action, obs, reward/self.coeff_norm, float(is_done), is_done, episode_start)
                 episode_start = False
+                list_action.append(action)
+                rewards += reward
 
     def pretrain_high_noise(self, nb_episodes_per_agent):
         #Déclanche le remplissage du buffer avec une plus grande probabilité d'actions aléatoires.
@@ -71,7 +85,9 @@ class Pretrain():
         # actions = {}
         # rewards = {}
         is_done = False
+        rewards = 0
         for i in range(nb_episodes_per_agent):
+            print("rewards : ", rewards)
             j = 0
             print('ET DE UN EPISODE EN HIGH NOISE')
             obs = self.env.reset()
@@ -80,18 +96,21 @@ class Pretrain():
             # actions_episode = {}
             # states_episode = {0: obs}
             # rewards_episode = {}
+            rewards = 0
             while not is_done:
+                j+=1
                 if np.random.rand()<self.low_noise_p:
                     action = self.env.action_space.sample()
                     # action = np.random.randint(3)
                 else:
-                    action = self.policy.select_action(np.array(obs))
+                    action = self.policy.select_action(np.array(obs), eval = True)
                     # action, _states = self.model.predict(obs)
                 states = obs
                 obs, reward, is_done, info = self.env.step(action)
                 # rewards_episode[j-1] = reward
-                self.replay_buffer.add(states, action, obs, reward, float(is_done), is_done, episode_start)
+                self.replay_buffer.add(states, action, obs, reward/self.coeff_norm, float(is_done), is_done, episode_start)
                 episode_start = False
+                rewards+=reward
 
 
     def iterate_parents(self, nb_episodes_per_agent=0, epsilon=0.01):

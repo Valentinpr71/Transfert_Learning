@@ -45,8 +45,9 @@ dim = manager.dim
 from microgrid.envs.import_data import Import_data
 
 import_data = Import_data(mode='train')
-consumption_norm, consumption = import_data.data_cons_AutoCalSOl()
-production_norm, production = import_data.data_prod_AutoCalSol(dimPV=dim[0], dimPVmax=17)
+consumption_norm, consumption, production_norm, production = import_data.treat_csv(dim[0], 17, "clean_PV_GIS_2020_SARAH2.csv")
+#consumption_norm, consumption = import_data.data_cons_AutoCalSOl()
+#production_norm, production = import_data.data_prod_AutoCalSol(dimPV=dim[0], dimPVmax=17)
 #manager.add_data_prod(data_prod=production, data_prod_norm=production_norm)
 #manager.add_data_cons(data_cons=consumption, data_cons_norm=consumption_norm)
 data = [consumption, consumption_norm, production, production_norm]
@@ -92,10 +93,11 @@ while not is_done:
 a = np.load(f"./results/BCQ_MicrogridControlGym-v0_{manager._create_hashkey()}.npy")
 np.save(f"./models/list_action_{dim}.npy",list_of_actions)
 plt.plot(np.linspace(0,len(a),len(a)),a)
-label_x = "Nombre d'épisodes"
+label_x = "Nombre de validation"
 label_y = "Récompense cumulée sur 1 épisode"
-plt.title(f"{manager.dim} en comportemental")
+plt.title(f"{manager.dim} en BCQ")
 plt.xlabel(label_x)
 plt.ylabel(label_y)
 plt.savefig(f"results/reward_{int(dim[0])}_{int(dim[1])}.png")
 manager._create_hashkey()
+
