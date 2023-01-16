@@ -20,9 +20,9 @@ from Tuple_ech import Interact
 from torch.utils.tensorboard import SummaryWriter
 
 class main_BCQ():
-	def __init__(self, env, manager, seed=0, buffer_name="Default", max_timestep=1e6, BCQ_threshold=0.3, low_noise_p=0.1, rand_action_p=0.3):
+	def __init__(self, env, manager, seed=0, buffer_name="Default", max_timestep=1e6, BCQ_threshold=0.3, low_noise_p=0.1, rand_action_p=0.3, already_trained=0):
 		self.writer = SummaryWriter()
-
+		self.already_trained = already_trained
 		self.regular_parameters = {
 			# multi_env
 			"nb_parents": 1,
@@ -67,14 +67,15 @@ class main_BCQ():
 
 
 
-	if not os.path.exists("./results"):
-		os.makedirs("./results")
+	if not os.path.exists("./tests_optim/results"):
+		print("no folder created yet")
+		os.makedirs("./tests_optim/results")
+	print("folder created")
+	if not os.path.exists("./tests_optim/models"):
+		os.makedirs("./tests_optim/models")
 
-	if not os.path.exists("./models"):
-		os.makedirs("./models")
-
-	if not os.path.exists("./buffers"):
-		os.makedirs("./buffers")
+	if not os.path.exists("./tests_optim/buffers"):
+		os.makedirs("./tests_optim/buffers")
 
 	def interact_with_environment(self, env, replay_buffer, is_atari, device, inter=None):
 		# For saving files
@@ -88,7 +89,7 @@ class main_BCQ():
 		parameters=self.regular_parameters
 		policy0 = DQN.DQN(
 			is_atari,
-			self.num_actions,
+			self.num_action,
 			self.state_dim,
 			device,
 			parameters["discount"],
@@ -109,7 +110,7 @@ class main_BCQ():
 		)
 		policy1 = discrete_BCQ.discrete_BCQ(
 			is_atari,
-			self.num_actions,
+			self.num_action,
 			self.state_dim,
 			device,
 			self.BCQ_threshold,
@@ -205,12 +206,12 @@ class main_BCQ():
 			if self.train_behavioral and (t + 1) % parameters["eval_freq"] == 0:
 				patience += 1
 				evaluations.append(self.eval_policy(policy0))
-				np.save(f"./results/{setting}", evaluations)
+				np.save(f"./tests_optim/results/{setting}", evaluations)
 				if evaluations[-1]>best_eval or best_eval == 0:
 					patience = 0
 					best_eval = evaluations[-1]
-					policy0.save(f"./models/{setting}")
-				if patience>=15:
+					policy0.save(f"./tests_optim/models/{setting}")
+				if patience>=5:
 					break
 				# else:
 				# 	policy0.save(f"./models/actual_policy_{t}_{setting}")
@@ -221,12 +222,12 @@ class main_BCQ():
 
 # On enlève le else, on sauvegarde le replay buffer dans tous les cas pour voir ce qu'il s'y passe
 		# else:
-		replay_buffer.save(f"./buffers/{buffer_name}")
+		replay_buffer.save(f"./tests_optim/buffers/{buffer_name}")
 
 		# Save final buffer and performance
 		if not self.generate_buffer:
 			evaluations.append(self.eval_policy(policy0))
-			np.save(f"./results/{setting}", evaluations)
+			np.save(f"./tests_optim/results/{setting}", evaluations)
 
 
 
@@ -241,7 +242,7 @@ class main_BCQ():
 		# Initialize and load policy
 		policy = discrete_BCQ.discrete_BCQ(
 			is_atari,
-			self.num_actions,
+			self.num_action,
 			self.state_dim,
 			device,
 			self.BCQ_threshold,
@@ -260,31 +261,31 @@ class main_BCQ():
 		)
 
 		# Load replay buffer
-		replay_buffer.load(f"./buffers/{buffer_name}")
+		replay_buffer.load(f"./tests_optim/buffers/{buffer_name}")
 
 		evaluations = []
 		episode_num = 0
 		done = True
 		training_iters = 0
 		patience = 0
-		while training_iters < self.max_timestep and patience < 15:
+		while training_iters < self.max_timestep and patience < 5:
 			# for _ in range(int(parameters["eval_freq"])):
 			for _ in range(int(640)):
 				policy.train(replay_buffer)
 
 			evaluations.append(self.eval_policy(policy))
-			np.save(f"./results/BCQ_{setting}", evaluations)
+			np.save(f"./tests_optim/results/BCQ_{setting}", evaluations)
 			if evaluations[-1] > best_eval or best_eval == 0:
 				patience = 0
 				best_eval = evaluations[-1]
-				policy.save(f"./models/{setting}")
+				policy.save(f"./tests_optim/models/{setting}")
 			patience +=1
 			training_iters += int(parameters["eval_freq"])
 			print(f"Training iterations: {training_iters}")
 			print("END OF A BCQ TRAINING LOOP")
 		# policy.save(f"./models/{setting}")
 		evaluations.append(self.eval_policy(policy))
-		np.save(f"./results/BCQ_{setting}", evaluations)
+		np.save(f"./tests_optim/results/BCQ_{setting}", evaluations)
 
 
 	# Runs policy for X episodes and returns average reward
@@ -316,11 +317,87 @@ class main_BCQ():
 
 	def Iterate(self, temps):
 		# np.random.seed(seed=int(time.time()))
+
 		len_episode = 8760
-		env, self.state_dim, self.num_actions = utils.make_env(self.env, self.manager)
+		env, self.state_dim, self.num_action = utils.make_env(self.env, self.manager)
 		parents = self.manager.choose_parents()
 		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+		tau_autoprod, tau_autocons = [], []
+		if self.already_trained == 2:
+			parameters = self.regular_parameters
+			policy = discrete_BCQ.discrete_BCQ(
+				False,
+				self.num_action,
+				self.state_dim,
+				device,
+				self.BCQ_threshold,
+				parameters["discount"],
+				parameters["optimizer"],
+				parameters["optimizer_parameters"],
+				parameters["polyak_target_update"],
+				parameters["target_update_freq"],
+				parameters["tau"],
+				0,
+				0,
+				1,
+				0,
+				self.writer,
+				parameters['train_freq']
+			)
+			policy.load(f"./tests_optim/models/MicrogridControlGym-v0_{self.manager._create_hashkey()}")
+			rewards = np.array([])
+			obs = env.reset()
+			is_done = False
+			while not is_done:
+				action = policy.select_action(np.array(obs))
+				obs, reward, is_done, info = env.step(action)
+				rewards = np.append(rewards, reward)
+			score = np.sum(rewards)
+			tab = env.render_to_file()
+			grp = tab.groupby(tab.index.month)
+			for i in range(len(grp)):
+				tau_autoprod.append(
+					1 - (sum(tab['Energy Bought'][grp.groups[i + 1]]) / sum(tab["Consumption"][grp.groups[i + 1]])))
+				tau_autocons.append(
+					1 - (sum(tab['Energy Sold'][grp.groups[i + 1]]) / sum(tab["PV production"][grp.groups[i + 1]])))
+			return (-score, 0, tau_autoprod, tau_autocons)
+		if self.already_trained == 1:
+			parameters = self.regular_parameters
+			policy = DQN.DQN(
+				False,
+				self.num_action,
+				self.state_dim,
+				device,
+				parameters["discount"],
+				parameters["optimizer"],
+				parameters["optimizer_parameters"],
+				parameters["polyak_target_update"],
+				parameters["target_update_freq"],
+				parameters["tau"],
+				0,
+				0,
+				1,
+				0,
+				self.writer,
+				parameters['train_freq']
+			)
+			policy.load(f"./tests_optim/models/MicrogridControlGym-v0_{self.manager._create_hashkey()}")
+			rewards = np.array([])
+			obs = env.reset()
+			is_done = False
+			while not is_done:
+				action = policy.select_action(np.array(obs))
+				obs, reward, is_done, info = env.step(action)
+				rewards = np.append(rewards, reward)
+			score = np.sum(rewards)
+			tab = env.render_to_file()
+			grp = tab.groupby(tab.index.month)
+			for i in range(len(grp)):
+				tau_autoprod.append(
+					1 - (sum(tab['Energy Bought'][grp.groups[i + 1]]) / sum(tab["Consumption"][grp.groups[i + 1]])))
+				tau_autocons.append(
+					1 - (sum(tab['Energy Sold'][grp.groups[i + 1]]) / sum(tab["PV production"][grp.groups[i + 1]])))
+			return (-score, 0, tau_autoprod, tau_autocons)
 		# Initialize buffer
 		replay_buffer = utils.ReplayBuffer(self.state_dim, self.regular_parameters["batch_size"], self.regular_parameters["buffer_size"], device)
 		# args = pd.DataFrame(
@@ -340,6 +417,41 @@ class main_BCQ():
 			self.interact_with_environment(env, replay_buffer, False, device)
 			end = time.time()
 			temps["behavioral"] = np.append(temps["behavioral"],end-start)
+			parameters = self.regular_parameters
+			policy = DQN.DQN(
+				False,
+				self.num_action,
+				self.state_dim,
+				device,
+				parameters["discount"],
+				parameters["optimizer"],
+				parameters["optimizer_parameters"],
+				parameters["polyak_target_update"],
+				parameters["target_update_freq"],
+				parameters["tau"],
+				0,
+				0,
+				1,
+				0,
+				self.writer,
+				parameters['train_freq']
+			)
+			policy.load(f"./tests_optim/models/MicrogridControlGym-v0_{self.manager._create_hashkey()}")
+			rewards = np.array([])
+			obs = env.reset()
+			is_done = False
+			while not is_done:
+				action = policy.select_action(np.array(obs))
+				obs, reward, is_done, info = env.step(action)
+				rewards = np.append(rewards, reward)
+			tab = env.render_to_file()
+			grp = tab.groupby(tab.index.month)
+			for i in range(len(grp)):
+				tau_autoprod.append(
+					1 - (sum(tab['Energy Bought'][grp.groups[i + 1]]) / sum(tab["Consumption"][grp.groups[i + 1]])))
+				tau_autocons.append(
+					1 - (sum(tab['Energy Sold'][grp.groups[i + 1]]) / sum(tab["PV production"][grp.groups[i + 1]])))
+			score = np.sum(rewards)
 		else:
 			# else, use buffers to train off-line
 			start = time.time()
@@ -354,7 +466,43 @@ class main_BCQ():
 			self.train_BCQ(replay_buffer, False, device)
 			end = time.time()
 			temps["bcq"] = np.append(temps["bcq"],end - start)
-		return(temps)
+			parameters = self.regular_parameters
+			policy = discrete_BCQ.discrete_BCQ(
+				False,
+				self.num_action,
+				self.state_dim,
+				device,
+				self.BCQ_threshold,
+				parameters["discount"],
+				parameters["optimizer"],
+				parameters["optimizer_parameters"],
+				parameters["polyak_target_update"],
+				parameters["target_update_freq"],
+				parameters["tau"],
+				0,
+				0,
+				1,
+				0,
+				self.writer,
+				parameters['train_freq']
+			)
+			policy.load(f"./tests_optim/models/MicrogridControlGym-v0_{self.manager._create_hashkey()}")
+			rewards = np.array([])
+			obs = env.reset()
+			is_done = False
+			while not is_done:
+				action = policy.select_action(np.array(obs))
+				obs, reward, is_done, info = env.step(action)
+				rewards = np.append(rewards, reward)
+			tab = env.render_to_file()
+			grp = tab.groupby(tab.index.month)
+			for i in range(len(grp)):
+				tau_autoprod.append(
+					1 - (sum(tab['Energy Bought'][grp.groups[i + 1]]) / sum(tab["Consumption"][grp.groups[i + 1]])))
+				tau_autocons.append(
+					1 - (sum(tab['Energy Sold'][grp.groups[i + 1]]) / sum(tab["PV production"][grp.groups[i + 1]])))
+			score = np.sum(rewards)
+		return(-score, temps, tau_autoprod, tau_autocons)
 	# # Set seeds
 	# env.seed(self.seed)
 	# env.action_space.seed(self.seed)

@@ -93,7 +93,7 @@ class microgrid_control_gym(gym.Env):
         # Dimensionnement des batteries court et long terme
         self.battery_size = dim[1]*1000
         self.battery_eta = 0.9
-
+        self.battery_storage = [0]
         self.hydrogen_max_power = 2.1*1000
         self.hydrogen_elec_eta = .65  # electrolyser eta
         self.hydrogen_PAC_eta = .5  # PAC eta
@@ -150,8 +150,6 @@ class microgrid_control_gym(gym.Env):
                 self._last_ponctual_observation[0] = 0
         elif Energy_needed_from_battery == 0:
             self.energy_bought.append(0)
-            self.energy_sold.append(0)
-
         elif Energy_needed_from_battery < 0:
             self.energy_bought.append(0)
             # Surplus of energy --> load the battery
@@ -161,9 +159,11 @@ class microgrid_control_gym(gym.Env):
                 if self.ppc_power_constraint == None:
                     # reward -= (self._last_ponctual_observation[
                     #                0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1) * 0.5  # 27 juin : J'ai multiplié par eta plutot que de diviser et rajouté un -1 pour ce qui concerne le surplus d'énergie # octobre 22: pas sûr pour le -1 (analyse dim)
-                    reward -= (-1*Energy_needed_from_battery) - ((1.0*self.battery_size-(self._last_ponctual_observation[0]*self.battery_size))/self.battery_eta) #octobre : R = energy needed -(taille batt -(energie)) pour n'avoir que le surplus on divise par eta car on ne pénalise pas l'énergie perdu dans le rendement de charge
-                    self.energy_sold.append(self._last_ponctual_observation[
-                                                0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1)  # 27 juin : idem
+                    reward -= (-1*Energy_needed_from_battery) - ((1.0*self.battery_size-(self._last_ponctual_observation[0]*self.battery_size))/self.battery_eta) #octobre : R = energy needed -(taille batt -(energie)) pour n'avoir que le surplus on divise par eta car on ne pénalise pas l'énergie perdu dans le rendement de charge, ce n'est pas une énergie vendue
+                    # self.energy_sold.append(self._last_ponctual_observation[
+                    #                             0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1)  # 27 juin : idem
+                    #jan 2023 :
+                    self.energy_sold.append((-1*Energy_needed_from_battery) - ((1.0*self.battery_size-(self._last_ponctual_observation[0]*self.battery_size))/self.battery_eta))
                 else:
                     threshold = min(self.ppc_power_constraint, self._last_ponctual_observation[
                         0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1)  # 27 juin : idem
@@ -183,7 +183,7 @@ class microgrid_control_gym(gym.Env):
             else:  # batterie pas remplie donc pas de surplus ni de vente
                 self.energy_sold.append(0)
             self._last_ponctual_observation[0] = min(1., self._last_ponctual_observation[0] - (Energy_needed_from_battery / self.battery_size) * self.battery_eta)
-
+        self.battery_storage.append(self._last_ponctual_observation[0]*self.battery_size)
         self._last_ponctual_observation[1] = self.consumption_norm[self.counter]
         self._last_ponctual_observation[2] = self.production_norm[self.counter]
         self._last_ponctual_observation[3] = self.dist_equinox[self.counter] / 182
@@ -192,8 +192,9 @@ class microgrid_control_gym(gym.Env):
         self.hydrogen_storage.append(self.hydrogen_storage[-1] + diff_hydrogen)
         self.counter += 1
         self.reward = reward
-        if self.num_episode-self.max_episode==0.:
-            self.render_to_file()
+        # jan 2023 :  on coupe render_to_file pour le moment, on le rendra dispo lors de évaluations des politiques pour analyses
+        # if self.num_episode-self.max_episode==0.:
+        #     self.render_to_file()
         return copy.copy(np.array(obs)), copy.copy(reward), is_done, self.hydrogen_storage
         # return copy.copy(obs), copy.copy(reward), is_done, info
 
@@ -210,7 +211,7 @@ class microgrid_control_gym(gym.Env):
         self._last_ponctual_observation = [1., 0., 0., self.dist_equinox[self.counter - 1] / 182]
 
         ##self.info = {"Timestep": [0], "Reward": [0],"Energy Surplus":[0]}
-
+        self.battery_storage = [0.]
         self.hydrogen_storage = [0.]
         self.info = {}
         #nov 2022 : on return aussi les données pour pouvoir les visualiser en changeant le point de départ
@@ -246,15 +247,17 @@ class microgrid_control_gym(gym.Env):
 
     ## Modifs de novembre 2022 pour afficher les éléments dont on a besoin pour une visualisation de ce qu'il se passe dans l'env.
     def render_to_file(self, filename='render.txt'):
-        if self.counter - self._max_episode_steps == 0:
-            Tableur = pd.DataFrame()
-            Tableur['PV production'] = self.production#self.production_norm * 12000. / 1000.
-            Tableur['Consumption'] = self.consumption #self.consumption_norm * 2.1
-            Tableur['Net demand'] = self.consumption-self.production#Tableur['Consumption'] - Tableur['PV production']
-            # if self.counter>3000:
-            #Tableur['Excess Energy'] = self.info[2]
-            Tableur['Hydrogen_storage'] = self.hydrogen_storage
-            #Tableur['Energy Bought'] = self.energy_bought
-            #Tableur['Energy Sold'] = self.energy_sold
-            Tableur.to_csv('render.csv', sep=',')
+        # if self.counter - self._max_episode_steps == 0:
+        Tableur = pd.DataFrame()
+        Tableur['PV production'] = self.production#self.production_norm * 12000. / 1000.
+        Tableur['Consumption'] = self.consumption #self.consumption_norm * 2.1
+        Tableur['Net demand'] = self.consumption-self.production#Tableur['Consumption'] - Tableur['PV production']
+        # if self.counter>3000:
+        #Tableur['Excess Energy'] = self.info[2]
+        Tableur['Battery Storage'] = self.battery_storage
+        Tableur['Hydrogen_storage'] = self.hydrogen_storage
+        Tableur['Energy Bought'] = self.energy_bought
+        Tableur['Energy Sold'] = self.energy_sold
+        # Tableur.to_csv('render.csv', sep=',')
+        return Tableur
 

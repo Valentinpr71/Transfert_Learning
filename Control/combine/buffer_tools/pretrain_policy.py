@@ -30,7 +30,8 @@ class Pretrain():
         setting = f"MicrogridControlGym-v0_"+filename
         self.env = gym.make("MicrogridControlGym-v0", dim=self.dim, data=self.data)
         ## modifs pour intégrer pytorch au load de l'agent pour faire comme avec le train_behavioral de BCQ
-        self.policy.load(f"./models/{setting}")
+        #Noel : Ajout du prefixe tests_optim pour tester l'algorithme d'optimisation.
+        self.policy.load(f"./tests_optim/models/{setting}")
         print(setting)
         print("af")
         # self.model =
@@ -113,14 +114,15 @@ class Pretrain():
                 rewards+=reward
 
 
-    def iterate_parents(self, nb_episodes_per_agent=0, epsilon=0.01):
+    def iterate_parents(self, nb_episodes_per_agent=0, epsilon=0.01, optim=False):
+        #Noel : Argument optim rajouté pour change la localisation des résultats lors des essais d'optimisation
         print("PRETRAIN POLICY --> iterate parents, sample tuples from parents policy for self.dicto = ", self.dicto)
         for i in self.dicto:
             self.dim = self.dicto[i]
             print("dim : ",self.dim)
             ### VP : Cette partie un peu tricky permet de charger la "forme" de la politique adaptée selon si elle vient d'un BCQ ou d'un individu qui a intéragit
             # Cette lecture se fait facilement avec le nom du fichier de résultat lié au hashkey qui va permettre de charger la politique. Soit il y a BCQ dans le nom, soit il n'y est pas
-            file = glob.glob(f"./results/*{i}.npy")
+            file = glob.glob(f"./tests_optim/results/*{i}.npy")
             if "BCQ" in file[0]:
                 self.policy = self.policy1
             else:
@@ -128,3 +130,4 @@ class Pretrain():
             self._load_agent(str(i))
             self.tuples_pretrain(nb_episodes_per_agent, epsilon)
         return self.replay_buffer
+

@@ -1,0 +1,39 @@
+Pour AutoCalSol :
+
+from discrete_BCQ import utils
+import gym
+import numpy as np
+import matplotlib.pyplot as plt
+from discrete_BCQ.DQN import DQN
+from buffer_tools.hash_manager import Dim_manager
+
+
+
+manager = Dim_manager(4,2)
+manager._dim([10.,10.])
+dim = manager.dim
+
+from microgrid.envs.import_data import Import_data
+
+import_data = Import_data(mode='train')
+consumption_norm, consumption = import_data.data_cons_AutoCalSOl()
+production_norm, production = import_data.data_prod_AutoCalSol(dimPV=dim[0], dimPVmax=17)
+#manager.add_data_prod(data_prod=production, data_prod_norm=production_norm)
+#manager.add_data_cons(data_cons=consumption, data_cons_norm=consumption_norm)
+data = [consumption, consumption_norm, production, production_norm]
+env = gym.make("microgrid:MicrogridControlGym-v0", dim=dim, data=data)
+manager.data = data
+env, state_dim, num_action = utils.make_env("microgrid:MicrogridControlGym-v0", manager)
+writer = None
+device = "cpu"
+
+
+obs = env.reset()
+is_done=False
+rewards = np.array([])
+while not is_done:
+	action = env.action_space.sample()
+	states = obs
+	obs, reward, is_done, info = env.step(action)
+	rewards = np.append(rewards, reward)
+manager._create_hashkey()
