@@ -16,6 +16,7 @@ class Conv_Q(nn.Module):
 		self.l2 = nn.Linear(512, num_actions)
 
 
+
 	def forward(self, state):
 		q = F.relu(self.c1(state))
 		q = F.relu(self.c2(q))
@@ -31,6 +32,7 @@ class FC_Q(nn.Module):
 		self.l1 = nn.Linear(state_dim, 256)
 		self.l2 = nn.Linear(256, 256)
 		self.l3 = nn.Linear(256, num_actions)
+
 
 
 	def forward(self, state):
@@ -59,7 +61,6 @@ class DQN(object):
 		writter = None,
 			train_freq= 1
 	):
-	
 		self.device = device
 
 		# Determine network type

@@ -11,8 +11,8 @@ from render.testplot2 import Test_plot
 class microgrid_control_gym(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, plot_every=10, ppc=None, sell_to_grid=True, total_timesteps=8760 * 10, month=[], dim=[12., 15.],
-                 data=[], date_initiale="2022-01-01"):#,date_initiale="2010-06-21"):  # ,month=[9,10,11,12,1,2]):
+    def __init__(self, plot_every=10, ppc=None, sell_to_grid=False, total_timesteps=8760 * 10, month=[], dim=[12., 15.],
+                 data=[], date_initiale="2022-06-21"):#,date_initiale="2010-06-21"):  # ,month=[9,10,11,12,1,2]):
         print("dim :  eff", dim)
         self._max_episode_steps = 8760
         self.month = month
@@ -33,6 +33,7 @@ class microgrid_control_gym(gym.Env):
         self.plot_every = plot_every
         # State space:
         self.observation_space = spaces.Box(low=np.array([0., 0., 0., 0.]), high=np.array([1., 1., 1., 1]))
+        # self.observation_space = spaces.Box(low=np.array([0., 0., 0., 0., 0.]), high=np.array([1., 1., 1., 1, 1.]))
 
         #nov2022 : Ajout de l'aspect "Date initiale" de la simulation
         dates2 = pd.date_range(date_initiale, periods=8760, freq='H').values
@@ -94,12 +95,15 @@ class microgrid_control_gym(gym.Env):
         self.battery_size = dim[1]*1000
         self.battery_eta = 0.9
         self.battery_storage = [0]
-        self.hydrogen_max_power = 2.1*1000
+        # self.hydrogen_max_power = 2.1*1000
+        self.hydrogen_max_power = 1*1000 # PENSER À CHANGER COEFFNORM DANS LE SCRIPT MAIN.PY
         self.hydrogen_elec_eta = .65  # electrolyser eta
         self.hydrogen_PAC_eta = .5  # PAC eta
         ##self.info={"Timestep":[0],"Reward":[0],"Energy Surplus":[0]}
         self.num_episode = 0
         self.info = {}
+        ### On a rajouté l'observation de la quantité d'H2 produite à l'agent. Il faut le normer par un nombre
+        self.normH2 = 2.1*8760
 
     def step(self, action):
 
@@ -172,7 +176,7 @@ class microgrid_control_gym(gym.Env):
                         self.energy_sold.append(self.ppc_power_constraint)
                     else:
                         reward -= (self._last_ponctual_observation[
-                                       0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1) #* 0.5  # 27juin:idem
+                                       0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1)
                         self.energy_sold.append(self._last_ponctual_observation[
                                                     0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1)  # 27 juin:idem
 
@@ -187,6 +191,7 @@ class microgrid_control_gym(gym.Env):
         self._last_ponctual_observation[1] = self.consumption_norm[self.counter]
         self._last_ponctual_observation[2] = self.production_norm[self.counter]
         self._last_ponctual_observation[3] = self.dist_equinox[self.counter] / 182
+        # self._last_ponctual_observation[4] = self.hydrogen_storage[-1]/self.normH2
         # print("counter :", self.counter, "dist equinoxe : ", self.dist_equinox[self.counter],"last obs 0 : ",self._last_ponctual_observation[0], 'reward : ',reward)
         obs = self._last_ponctual_observation
         self.hydrogen_storage.append(self.hydrogen_storage[-1] + diff_hydrogen)
@@ -208,6 +213,7 @@ class microgrid_control_gym(gym.Env):
         print("RESET : " + str(self.num_episode))
         self.num_episode += 1
         self.trades = []
+        # self._last_ponctual_observation = [1., 0., 0., self.dist_equinox[self.counter - 1] / 182, 0.]
         self._last_ponctual_observation = [1., 0., 0., self.dist_equinox[self.counter - 1] / 182]
 
         ##self.info = {"Timestep": [0], "Reward": [0],"Energy Surplus":[0]}
@@ -217,6 +223,7 @@ class microgrid_control_gym(gym.Env):
         #nov 2022 : on return aussi les données pour pouvoir les visualiser en changeant le point de départ
         # print(np.array([1., 0., 0., self.dist_equinox[self.counter - 1] / 182]), self.production, self.consumption)
         return(np.array([1., 0., 0., self.dist_equinox[self.counter - 1] / 182]))#, self.production, self.consumption)
+        # return(np.array([1., 0., 0., self.dist_equinox[self.counter - 1] / 182, 0.]))#, self.production, self.consumption)
 
     def render(self):
         pass

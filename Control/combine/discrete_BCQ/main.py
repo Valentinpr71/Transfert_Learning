@@ -36,7 +36,7 @@ class main_BCQ():
 			# Evaluation
 			#"eval_freq": 8759,#Attention c'est en nombre de step et pas en nombre d'épisodes
 			"eval_freq": 8760,
-			"eval_eps": 0.001,
+			"eval_eps": 0,
 			# Learning
 			"discount": 0.75,
 			"buffer_size": 1e6,
@@ -54,7 +54,7 @@ class main_BCQ():
 			#tau passé de 0.005 à 0.9
 			"tau": 0.005
 		}
-
+		torch.manual_seed(0)
 		# Load parameters
 		self.env = env
 		self.seed = seed
@@ -79,7 +79,9 @@ class main_BCQ():
 	def interact_with_environment(self, env, replay_buffer, is_atari, device, inter=None):
 		# For saving files
 		manager = self.manager
-		coeff_norm = max((manager.data[0].max()),(manager.data[3].max()))
+		# coeff_norm = max((manager.data[0].max()),(manager.data[2].max()))
+		coeff_norm = manager.data[0].max()+(manager.dim[1]*1000*0.9)+(1000*0.65)#,(manager.data[2].max()))
+		# coeff_norm = manager.data[0].max()#+(manager.dim[1]*1000*0.9)+(2100*0.65)#,(manager.data[2].max()))
 		setting = f"{self.env}_{list(manager.dicto.keys())[-1]}" #On met le hashkey correspondant au dimensionnement actuel dans le nom. On retrouve ce dimensionnement comme le dernier ajouté au dictionnaire du manager
 		buffer_name = f"{self.buffer_name}_{setting}"
 		print("SETING : ", setting)
@@ -187,6 +189,7 @@ class main_BCQ():
 			# Train agent after collecting sufficient data
 			if self.train_behavioral and t >= parameters["start_timesteps"] and (t+1) % parameters["train_freq"] == 0:
 				# Q_loss = Q_loss + policy0.train(replay_buffer) #policy.train echantillonne dans le buffer un batch (64 par defaut) d'où l'intérêt de remplir le buffer avec de l'aléatoire avant de train
+
 				policy0.train(replay_buffer)
 				#### EDIT : Toujours une indentation car à la fin de l'appel de Tuple_ech, le buffer est rempli, on ne se soucie donc pas de ce qu'il se passe dans ni entre les episode de generate_buffer depuis le main
 			if self.train_behavioral:
@@ -267,7 +270,7 @@ class main_BCQ():
 		done = True
 		training_iters = 0
 		patience = 0
-		while training_iters < self.max_timestep and patience < 15:
+		while training_iters < self.max_timestep and patience < 25:
 			# for _ in range(int(parameters["eval_freq"])):
 			for _ in range(int(640)):
 				policy.train(replay_buffer)
@@ -318,6 +321,7 @@ class main_BCQ():
 		# np.random.seed(seed=int(time.time()))
 		len_episode = 8760
 		env, self.state_dim, self.num_actions = utils.make_env(self.env, self.manager)
+		print("state dim : ", self.state_dim)
 		parents = self.manager.choose_parents()
 		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

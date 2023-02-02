@@ -8,10 +8,10 @@ import glob
 import torch
 
 if __name__ == "__main__":
-    dim_num_iteration=3
+    dim_num_iteration=5
     dim_boundaries = {'PV': {'low': 0, 'high': 17}, 'batt': {'low': 0, 'high': 15}}
-    distance_euclidienne = 3
-    nb_voisins = 2
+    distance_euclidienne = 4
+    nb_voisins = 1
     manager = Dim_manager(distance=distance_euclidienne,nb_voisins=nb_voisins)
     import_data = Import_data(mode="train")
     # consumption = import_data.consumption()
@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     for i in range(dim_num_iteration):
         print(f"itération {i} de dimensionnement")
-        cheat_dim_list = [np.array([4.,7.0]), np.array([2.0,7.0]),np.array([3.0, 7.0]),np.array([10.0,10.0]),np.array([10.0,10.0])] #Ajouté uniquement dans un but d'analyse de l'algo au début (on force le nb de voisin a etre petit)
+        cheat_dim_list = [np.array([5.,9.]), np.array([5.,5.]),np.array([5.0, 5.0]),np.array([5.0,5.0]),np.array([5.0,5.0])] #Ajouté uniquement dans un but d'analyse de l'algo au début (on force le nb de voisin a etre petit)
         # dim = np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])),
         #                 float(np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))])
         dim = cheat_dim_list[i]

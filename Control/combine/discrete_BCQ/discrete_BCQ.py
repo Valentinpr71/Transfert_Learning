@@ -34,6 +34,7 @@ class Conv_Q(nn.Module):
 # Used for Box2D / Toy problems
 class FC_Q(nn.Module):
 	def __init__(self, state_dim, num_actions):
+		print("state dim FC Q", state_dim)
 		super(FC_Q, self).__init__()
 		self.q1 = nn.Linear(state_dim, 256)
 		self.q2 = nn.Linear(256, 256)
@@ -75,7 +76,8 @@ class discrete_BCQ(object):
 		writer = None,
 		train_freq = 1
 	):
-	
+		print("state dim discrete BCQ", state_dim)
+		print("discout : ", discount)
 		self.device = device
 
 		# Determine network type
@@ -181,6 +183,7 @@ class discrete_BCQ(object):
 			 self.Q_target.load_state_dict(self.Q.state_dict())
 
 	def load(self, filename):
+		print("filename : ", filename)
 		self.Q.load_state_dict(torch.load(filename + "_Q"))
 		self.Q_target = copy.deepcopy(self.Q)
 		self.Q_optimizer.load_state_dict(torch.load(filename + "_optimizer"))

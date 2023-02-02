@@ -25,7 +25,7 @@ class Interact():
         self.replay_buffer = replay_buffer
         self.low_noise_p = low_noise_p
         self.rand_action_p = rand_action_p
-        self.epsilon = 0.01
+        self.epsilon = 0.05
         self.policy = policy
 
     def _Action_rule_based(self, epsilon):#, seed=0):
@@ -43,7 +43,7 @@ class Interact():
             self.frac_rule = 0
             self.frac_pretrain = 1.
             self.frac_pretrain_exp = self.frac_pretrain
-            self.epsilon = 0.02
+            self.epsilon = 0.05
         elif self.log == 2:
             # self.frac_random = 0.2
             self.frac_rule = 0.4

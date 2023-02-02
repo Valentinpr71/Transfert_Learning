@@ -29,7 +29,7 @@ def rule_based_actions(dim, data, epsilon):#, seed):
     action=np.zeros(len(cons));
     SOC=0.1; # Définition du SOC de départ
     E_H2=0; #Stockage H2 de départ
-    P_nominal_H2 = 2.1*1000;  # Puissance H2
+    P_nominal_H2 = 1*1000;  # Puissance H2
     P_nominal_batt = Ebatt_max - Ebatt_min;  # Puissance batterie (C1)
     nb_explo = 0
     # np.random.seed(seed=int(time.time()))
