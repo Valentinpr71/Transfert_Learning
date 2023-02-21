@@ -23,6 +23,39 @@ class main_BCQ():
 	def __init__(self, env, manager, seed=0, buffer_name="Default", max_timestep=1e6, BCQ_threshold=0.3, low_noise_p=0.1, rand_action_p=0.3, already_trained=0):
 		self.writer = SummaryWriter()
 		self.already_trained = already_trained
+		# self.regular_parameters = {
+		# 	# multi_env
+		# 	"nb_parents": 1,
+		# 	"euclidian_dist": 1,
+		# 	# Exploration
+		# 	### Modifié pour l'abaisser dans les épisodes en low noise
+		# 	"start_timesteps": 8760, #nombre de step avant de ne plus prendre que des actions aléatoires
+		# 	"initial_eps": 0.01,
+		# 	"end_eps": 0.1,
+		# 	"eps_decay_period": 1,
+		# 	# Evaluation
+		# 	#"eval_freq": 8759,#Attention c'est en nombre de step et pas en nombre d'épisodes
+		# 	"eval_freq": 8760,
+		# 	"eval_eps": 0.001,
+		# 	# Learning
+		# 	"discount": 0.75,
+		# 	"buffer_size": 1e6,
+		# 	# "batch_size": 64,
+		# 	"batch_size": 256,
+		# 	"optimizer": "Adam",
+		# 	"optimizer_parameters": {
+		# 		"lr": 1e-3
+		# 		# "lr": 3e-4
+		# 	},
+		# 	"train_freq": 1,
+		# 	# "polyak_target_update": False,
+		# 	"polyak_target_update": False,
+		# 	"target_update_freq": 70000,
+		# 	#tau passé de 0.005 à 0.9
+		# 	"tau": 0.005
+		# }
+
+		##### VP 17/02 : Je retourne sur l'opti après l'étude en mono_objectif
 		self.regular_parameters = {
 			# multi_env
 			"nb_parents": 1,
@@ -30,30 +63,32 @@ class main_BCQ():
 			# Exploration
 			### Modifié pour l'abaisser dans les épisodes en low noise
 			"start_timesteps": 8760, #nombre de step avant de ne plus prendre que des actions aléatoires
-			"initial_eps": 0.01,
-			"end_eps": 0.1,
-			"eps_decay_period": 1,
+			"initial_eps": 0.1,
+			"end_eps": 0.001,
+			"eps_decay_period": 25e4,
 			# Evaluation
 			#"eval_freq": 8759,#Attention c'est en nombre de step et pas en nombre d'épisodes
-			"eval_freq": 8760,
-			"eval_eps": 0.001,
+			# "eval_freq": 8760,
+			"eval_freq": 2920,
+			"eval_eps": 0,
 			# Learning
-			"discount": 0.75,
+			"discount": 0.99,
 			"buffer_size": 1e6,
-			# "batch_size": 64,
+			# "batch_size": 128,
 			"batch_size": 256,
 			"optimizer": "Adam",
 			"optimizer_parameters": {
-				"lr": 1e-3
+				"lr": 1e-4
 				# "lr": 3e-4
 			},
-			"train_freq": 1,
+			"train_freq": 730,
 			# "polyak_target_update": False,
 			"polyak_target_update": False,
-			"target_update_freq": 70000,
+			"target_update_freq": 100,
 			#tau passé de 0.005 à 0.9
 			"tau": 0.005
 		}
+		torch.manual_seed(0)
 
 		# Load parameters
 		self.env = env
@@ -138,7 +173,7 @@ class main_BCQ():
 		episode_timesteps = 0
 		episode_num = 0
 		low_noise_ep = np.random.uniform(0,1) < self.low_noise_p
-		best_eval = 0
+		best_eval = -1e7
 		if inter == None:
 			pass
 		else:
@@ -207,11 +242,11 @@ class main_BCQ():
 				patience += 1
 				evaluations.append(self.eval_policy(policy0))
 				np.save(f"./tests_optim/results/{setting}", evaluations)
-				if evaluations[-1]>best_eval or best_eval == 0:
+				if evaluations[-1] > best_eval:
 					patience = 0
 					best_eval = evaluations[-1]
 					policy0.save(f"./tests_optim/models/{setting}")
-				if patience>=5:
+				if patience >= 115 or best_eval == 0:
 					break
 				# else:
 				# 	policy0.save(f"./models/actual_policy_{t}_{setting}")
@@ -233,7 +268,7 @@ class main_BCQ():
 
 	# Trains BCQ offline
 	def train_BCQ(self, replay_buffer, is_atari, device):
-		best_eval = 0
+		best_eval = -1e7
 		# For saving files
 		setting = f"{self.env}_{list(self.manager.dicto.keys())[-1]}"
 		# setting = f"{self.env}_{self.seed}"
@@ -268,19 +303,20 @@ class main_BCQ():
 		done = True
 		training_iters = 0
 		patience = 0
-		while training_iters < self.max_timestep and patience < 5:
+		BCQ_eval_freq = 100
+		while training_iters < self.max_timestep and patience < 15:
 			# for _ in range(int(parameters["eval_freq"])):
-			for _ in range(int(640)):
+			for _ in range(int(BCQ_eval_freq)):
 				policy.train(replay_buffer)
 
 			evaluations.append(self.eval_policy(policy))
 			np.save(f"./tests_optim/results/BCQ_{setting}", evaluations)
-			if evaluations[-1] > best_eval or best_eval == 0:
+			if evaluations[-1] > best_eval:# or best_eval == 0:
 				patience = 0
 				best_eval = evaluations[-1]
 				policy.save(f"./tests_optim/models/{setting}")
 			patience +=1
-			training_iters += int(parameters["eval_freq"])
+			training_iters += int(BCQ_eval_freq)
 			print(f"Training iterations: {training_iters}")
 			print("END OF A BCQ TRAINING LOOP")
 		# policy.save(f"./models/{setting}")

@@ -31,8 +31,8 @@ class Pretrain():
         self.env = gym.make("MicrogridControlGym-v0", dim=self.dim, data=self.data)
         ## modifs pour intégrer pytorch au load de l'agent pour faire comme avec le train_behavioral de BCQ
         #Noel : Ajout du prefixe tests_optim pour tester l'algorithme d'optimisation.
-        # self.policy.load(f"./tests_optim/models/{setting}")
-        self.policy.load(f"./models/{setting}")
+        self.policy.load(f"./tests_optim/models/{setting}")
+        # self.policy.load(f"./models/{setting}")
 
 
         print(setting)
@@ -125,8 +125,8 @@ class Pretrain():
             print("dim : ",self.dim)
             ### VP : Cette partie un peu tricky permet de charger la "forme" de la politique adaptée selon si elle vient d'un BCQ ou d'un individu qui a intéragit
             # Cette lecture se fait facilement avec le nom du fichier de résultat lié au hashkey qui va permettre de charger la politique. Soit il y a BCQ dans le nom, soit il n'y est pas
-            file = glob.glob(f"./results/*{i}.npy")
-            # file = glob.glob(f"./tests_optim/results/*{i}.npy")
+            # file = glob.glob(f"./results/*{i}.npy")
+            file = glob.glob(f"./tests_optim/results/*{i}.npy")
             if "BCQ" in file[0]:
                 self.policy = self.policy1
             else:

@@ -32,12 +32,26 @@ class Dim_manager():
         self.dicto[self._create_hashkey()]=self.dim
         return 1
 
+    def is_symetrique(self):
+        self.parents = dict(self.parents_1)
+        ind = 0
+        keys = [i for i in self.parents_2]
+        for k in range(len(self.parents_2)):
+            for j in range(k, len(self.parents_2) - 1):
+                if ((self.parents_2[keys[k]][0] - self.dim[0]) * (self.parents_2[keys[j + 1]][0] - self.dim[0]) < 0) and (
+                        (self.parents_2[keys[k]][1] - self.dim[1]) * (self.parents_2[keys[j + 1]][1] - self.dim[1]) < 0):
+                    ind = 1
+                    self.parents.update(self.parents_2)
+        return ind
+
     def choose_parents(self):
         # #arr=np.zeros(len(self.dicto))
         # arr=self.dicto
         # for i in self.dicto:
         #     arr[i] = (np.linalg.norm(self.dim - self.dicto[i]) < self.distance)
-        self.parents = {k: v for k, v in self.dicto.items() if ((np.linalg.norm(np.array(self.dim) - np.array(v)) < self.distance) and (np.linalg.norm(np.array(self.dim) - np.array(v) != 0)))}
+        self.parents_1 = {k: v for k, v in self.dicto.items() if ((np.linalg.norm(np.array(self.dim) - np.array(v)) <= self.distance-1) and (np.linalg.norm(np.array(self.dim) - np.array(v) != 0)))}
+        self.parents_2 = {k: v for k, v in self.dicto.items() if ((np.linalg.norm(np.array(self.dim) - np.array(v)) < self.distance) and (np.linalg.norm(np.array(self.dim) - np.array(v)) > self.distance-1) and (np.linalg.norm(np.array(self.dim) - np.array(v) != 0)))}
+        self.is_symetrique()
         return self.parents #renvoie un dictionnaire rempli seulement avec les dimensionnement remplissant les conditions de distance euclidienne
 
     def add_data_cons(self, data_cons, data_cons_norm):

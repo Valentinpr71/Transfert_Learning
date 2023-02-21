@@ -41,6 +41,8 @@ class main_dim():
         temps = {"behavioral":np.array([]),"bcq":np.array([])}
 
         dim = np.array([float(dimPV), float(dimbatt)])
+        price_PV = 2600*dim[0] ## https://particulier.hellio.com/blog/travaux/cout-installation-panneau-solaire
+        price_batt = 600*dim[1] ## https://www.powertechsystems.eu/fr/home/technique/etude-de-cout-du-lithium-ion-vs-batteries-au-plomb/ POUR 8 ans (3000 cycles)
         self.manager._dim(dim.tolist())
         self.manager.choose_parents()
         # Noel 2020, voir commentaire plus bas.
@@ -68,8 +70,9 @@ class main_dim():
         BCQ = main_BCQ(env=env, manager=self.manager, seed=seed, buffer_name=buffer_name, max_timestep=max_timestep,
                        BCQ_threshold=BCQ_threshold, low_noise_p=low_noise_p, rand_action_p=rand_action_p, already_trained=trained_already)
         score, temps, tau_autoprod, tau_autocons = BCQ.Iterate(temps)
+        obj = (score*0.19*1e-3) + price_PV + price_batt
         # print("TEMPS DE CALCUL : ", temps)
-        return score, tau_autoprod, tau_autocons
+        return obj, score, tau_autoprod, tau_autocons
         #Noel : On enlève la partie if self.ad_to_dicto car l'agent est déjà entraîné sur la session si on ne l'ajoute pas au dict des dim connus de la session. On peut donc utiliser les already_trained.
 
         # else:

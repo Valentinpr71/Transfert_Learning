@@ -30,27 +30,28 @@ class main_BCQ():
 			# Exploration
 			### Modifié pour l'abaisser dans les épisodes en low noise
 			"start_timesteps": 8760, #nombre de step avant de ne plus prendre que des actions aléatoires
-			"initial_eps": 0.01,
-			"end_eps": 0.1,
-			"eps_decay_period": 1,
+			"initial_eps": 0.1,
+			"end_eps": 0.001,
+			"eps_decay_period": 25e4,
 			# Evaluation
 			#"eval_freq": 8759,#Attention c'est en nombre de step et pas en nombre d'épisodes
-			"eval_freq": 8760,
+			# "eval_freq": 8760,
+			"eval_freq": 2920,
 			"eval_eps": 0,
 			# Learning
-			"discount": 0.75,
+			"discount": 0.99,
 			"buffer_size": 1e6,
-			# "batch_size": 64,
+			# "batch_size": 128,
 			"batch_size": 256,
 			"optimizer": "Adam",
 			"optimizer_parameters": {
-				"lr": 1e-3
+				"lr": 1e-4
 				# "lr": 3e-4
 			},
-			"train_freq": 1,
+			"train_freq": 730,
 			# "polyak_target_update": False,
 			"polyak_target_update": False,
-			"target_update_freq": 70000,
+			"target_update_freq": 100,
 			#tau passé de 0.005 à 0.9
 			"tau": 0.005
 		}
@@ -209,11 +210,11 @@ class main_BCQ():
 				patience += 1
 				evaluations.append(self.eval_policy(policy0))
 				np.save(f"./results/{setting}", evaluations)
-				if evaluations[-1]>best_eval or best_eval == 0:
+				if evaluations[-1]>best_eval:# or best_eval == 0:
 					patience = 0
 					best_eval = evaluations[-1]
 					policy0.save(f"./models/{setting}")
-				if patience>=15:
+				if patience>=105:
 					break
 				# else:
 				# 	policy0.save(f"./models/actual_policy_{t}_{setting}")
@@ -270,19 +271,20 @@ class main_BCQ():
 		done = True
 		training_iters = 0
 		patience = 0
-		while training_iters < self.max_timestep and patience < 25:
+		BCQ_eval_freq = 100
+		while training_iters < self.max_timestep and patience < 15:
 			# for _ in range(int(parameters["eval_freq"])):
-			for _ in range(int(640)):
+			for _ in range(int(BCQ_eval_freq)):
 				policy.train(replay_buffer)
 
 			evaluations.append(self.eval_policy(policy))
 			np.save(f"./results/BCQ_{setting}", evaluations)
-			if evaluations[-1] > best_eval or best_eval == 0:
+			if evaluations[-1] > best_eval:# or best_eval == 0:
 				patience = 0
 				best_eval = evaluations[-1]
 				policy.save(f"./models/{setting}")
 			patience +=1
-			training_iters += int(parameters["eval_freq"])
+			training_iters += int(BCQ_eval_freq)#parameters["eval_freq"])
 			print(f"Training iterations: {training_iters}")
 			print("END OF A BCQ TRAINING LOOP")
 		# policy.save(f"./models/{setting}")
@@ -322,9 +324,9 @@ class main_BCQ():
 		len_episode = 8760
 		env, self.state_dim, self.num_actions = utils.make_env(self.env, self.manager)
 		print("state dim : ", self.state_dim)
+		# parents_d_1, parents_d_2 = self.manager.choose_parents()
 		parents = self.manager.choose_parents()
 		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 		# Initialize buffer
 		replay_buffer = utils.ReplayBuffer(self.state_dim, self.regular_parameters["batch_size"], self.regular_parameters["buffer_size"], device)
 		# args = pd.DataFrame(
