@@ -390,13 +390,16 @@ class main_BCQ():
 				rewards = np.append(rewards, reward)
 			score = np.sum(rewards)
 			tab = env.render_to_file()
+			## VP mars 23:
+			score = sum(tab['Energy Bought'])-(sum(tab['Energy Sold'])*0.25)
 			grp = tab.groupby(tab.index.month)
 			for i in range(len(grp)):
 				tau_autoprod.append(
 					1 - (sum(tab['Energy Bought'][grp.groups[i + 1]]) / sum(tab["Consumption"][grp.groups[i + 1]])))
 				tau_autocons.append(
 					1 - (sum(tab['Energy Sold'][grp.groups[i + 1]]) / sum(tab["PV production"][grp.groups[i + 1]])))
-			return (-score, 0, tau_autoprod, tau_autocons)
+			print('score : ', score)
+			return (score, 0, tau_autoprod, tau_autocons)
 		if self.already_trained == 1:
 			parameters = self.regular_parameters
 			policy = DQN.DQN(
@@ -427,13 +430,16 @@ class main_BCQ():
 				rewards = np.append(rewards, reward)
 			score = np.sum(rewards)
 			tab = env.render_to_file()
+			## VP mars 23:
+			score = sum(tab['Energy Bought'])-(sum(tab['Energy Sold'])*0.25)
 			grp = tab.groupby(tab.index.month)
 			for i in range(len(grp)):
 				tau_autoprod.append(
 					1 - (sum(tab['Energy Bought'][grp.groups[i + 1]]) / sum(tab["Consumption"][grp.groups[i + 1]])))
 				tau_autocons.append(
 					1 - (sum(tab['Energy Sold'][grp.groups[i + 1]]) / sum(tab["PV production"][grp.groups[i + 1]])))
-			return (-score, 0, tau_autoprod, tau_autocons)
+			print('score : ', score)
+			return (score, 0, tau_autoprod, tau_autocons)
 		# Initialize buffer
 		replay_buffer = utils.ReplayBuffer(self.state_dim, self.regular_parameters["batch_size"], self.regular_parameters["buffer_size"], device)
 		# args = pd.DataFrame(
@@ -488,6 +494,9 @@ class main_BCQ():
 				tau_autocons.append(
 					1 - (sum(tab['Energy Sold'][grp.groups[i + 1]]) / sum(tab["PV production"][grp.groups[i + 1]])))
 			score = np.sum(rewards)
+			## VP mars 23:
+			print('score : ', score)
+			score = sum(tab['Energy Bought'])-(sum(tab['Energy Sold'])*0.25)
 		else:
 			# else, use buffers to train off-line
 			start = time.time()
@@ -538,7 +547,10 @@ class main_BCQ():
 				tau_autocons.append(
 					1 - (sum(tab['Energy Sold'][grp.groups[i + 1]]) / sum(tab["PV production"][grp.groups[i + 1]])))
 			score = np.sum(rewards)
-		return(-score, temps, tau_autoprod, tau_autocons)
+			## VP mars 23:
+			score = sum(tab['Energy Bought'])-(sum(tab['Energy Sold'])*0.25)
+			print('score : ', score)
+		return(score, temps, tau_autoprod, tau_autocons)
 	# # Set seeds
 	# env.seed(self.seed)
 	# env.action_space.seed(self.seed)

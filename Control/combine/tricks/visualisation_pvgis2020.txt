@@ -90,6 +90,7 @@ while not is_done:
 	rewards = np.append(rewards, reward)
 	list_of_actions = np.append(list_of_actions,action)
 a = np.load(f"./results/MicrogridControlGym-v0_{manager._create_hashkey()}.npy")
+tab=env.render_to_file()
 np.save(f"./models/list_action_{dim}.npy",list_of_actions)
 plt.plot(np.linspace(0,len(a),len(a)),a)
 label_x = "Nombre d'épisodes"

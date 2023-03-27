@@ -11,7 +11,7 @@ from render.testplot2 import Test_plot
 class microgrid_control_gym(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, plot_every=10, ppc=None, sell_to_grid=False, total_timesteps=8760 * 10, month=[], dim=[12., 15.],
+    def __init__(self, plot_every=10, ppc=None, sell_to_grid=True, total_timesteps=8760 * 10, month=[], dim=[12., 15.],
                  data=[], date_initiale="2022-06-21"):#,date_initiale="2010-06-21"):  # ,month=[9,10,11,12,1,2]):
         print("dim :  eff", dim)
         self._max_episode_steps = 8760
@@ -106,7 +106,6 @@ class microgrid_control_gym(gym.Env):
         self.normH2 = 2.1*8760
 
     def step(self, action):
-
         # arf=""
         # On calcule la demande nette en enlevant la consommation a la production, directement sur le datatset normé
         true_demand = self.consumption[self.counter - 1] - self.production[self.counter - 1]
@@ -163,7 +162,9 @@ class microgrid_control_gym(gym.Env):
                 if self.ppc_power_constraint == None:
                     # reward -= (self._last_ponctual_observation[
                     #                0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1) * 0.5  # 27 juin : J'ai multiplié par eta plutot que de diviser et rajouté un -1 pour ce qui concerne le surplus d'énergie # octobre 22: pas sûr pour le -1 (analyse dim)
-                    reward -= (-1*Energy_needed_from_battery) - ((1.0*self.battery_size-(self._last_ponctual_observation[0]*self.battery_size))/self.battery_eta) #octobre : R = energy needed -(taille batt -(energie)) pour n'avoir que le surplus on divise par eta car on ne pénalise pas l'énergie perdu dans le rendement de charge, ce n'est pas une énergie vendue
+
+                    #### VP mars 23 : On enlève la récompense ici puisque l'agent ne minimise plus l'énergie vendue au grid, même s'il en vent (osef de l'énergie vendu alors que sell_to_grid =True
+                    ####reward -= (-1*Energy_needed_from_battery) - ((1.0*self.battery_size-(self._last_ponctual_observation[0]*self.battery_size))/self.battery_eta) #octobre : R = energy needed -(taille batt -(energie)) pour n'avoir que le surplus on divise par eta car on ne pénalise pas l'énergie perdu dans le rendement de charge, ce n'est pas une énergie vendue
                     # self.energy_sold.append(self._last_ponctual_observation[
                     #                             0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1)  # 27 juin : idem
                     #jan 2023 :
