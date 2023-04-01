@@ -87,5 +87,5 @@ class Import_data():
             a = pd.concat([a, data.loc[data.index.year == i]])
         a["ProdPV"]*=dimPV
         consumption_norm = a.Consumption / a.Consumption.max()
-        production_norm = a / (a * dimPVmax).max()
+        production_norm = a.ProdPV / (a.ProdPV * dimPVmax).max()
         return consumption_norm, a.Consumption, production_norm, a.ProdPV

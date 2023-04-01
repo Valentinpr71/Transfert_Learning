@@ -11,12 +11,12 @@ from render.testplot2 import Test_plot
 class microgrid_control_gym(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, plot_every=10, ppc=None, sell_to_grid=True, total_timesteps=8760 * 10, month=[], dim=[12., 15.],
-                 data=[], date_initiale="2022-06-21"):#,date_initiale="2010-06-21"):  # ,month=[9,10,11,12,1,2]):
+    def __init__(self, plot_every=10, ppc=None, sell_to_grid=True, total_timesteps=8760, month=[], dim=[12., 15.],#total_timestep ne sert que lorsque l'on déplace la date initiale de simulation.
+                 data=[], date_initiale="2010-01-01"):#,date_initiale="2010-06-21"):  # ,month=[9,10,11,12,1,2]):
         print("dim :  eff", dim)
-        self._max_episode_steps = 8760
+        self._max_episode_steps = len(data)
         self.month = month
-        self.max_episode = total_timesteps / self._max_episode_steps
+        #self.max_episode = total_timesteps / self._max_episode_steps
         super(microgrid_control_gym, self).__init__()
         self.ppc_power_constraint = ppc
         self.sell_to_grid = sell_to_grid
@@ -36,7 +36,7 @@ class microgrid_control_gym(gym.Env):
         # self.observation_space = spaces.Box(low=np.array([0., 0., 0., 0., 0.]), high=np.array([1., 1., 1., 1, 1.]))
 
         #nov2022 : Ajout de l'aspect "Date initiale" de la simulation
-        dates2 = pd.date_range(date_initiale, periods=8760, freq='H').values
+        dates2 = pd.date_range(date_initiale, periods=total_timesteps, freq='H').values
         datetime3 = pd.DatetimeIndex(dates2)
         year = int(date_initiale[:4])
         gen = (datetime3[i].replace(year=year) for i in range(len(datetime3)))
@@ -44,49 +44,26 @@ class microgrid_control_gym(gym.Env):
         # Définition de la variable observable "distance à l'équinoxe d'été"
         dates = pd.date_range(str(year)+'-01-01', periods=8760, freq='H').values
         datetime2 = pd.DatetimeIndex(dates)
-        a = (datetime2 - datetime.datetime(year, 6, 21)).days
-        b = (datetime2 - datetime.datetime(year+1, 6, 21)).days
+        # a = (datetime2 - datetime.datetime(year, 6, 21)).days
+        # b = (datetime2 - datetime.datetime(year+1, 6, 21)).days
+        ##31 mars 2023 :
+        dates=pd.DataFrame()
+        dates['ProdPV']=data[2]
+        datetime4 = pd.DatetimeIndex(dates.index)
+        leap = ((datetime4.year + 1) % 4 == 0)
+        aa = []
+        ba = []
+        for i in range(len(datetime4)):
+            aa.append((datetime4[i] - datetime.datetime(year=datetime4[i].year, month=6, day=21)).days)
+            ba.append((datetime4[i] - datetime.datetime(year=datetime4[i].year + 1 , month=6, day=21)).days-leap[i])
         ab = pd.DataFrame()
-        ab['a'] = a
-        ab['b'] = b
+        ab['a'] = aa
+        ab['b'] = ba
         self.dist_equinox = ab.abs().min(axis=1)
         self.consumption = data[0]
         self.consumption_norm = data[1]
         self.production = data[2]
         self.production_norm = data[3]
-        #nov 2022 : création d'un dataframe afin de renverser l'ordre des données en fonction
-        df=pd.DataFrame(index = datetime2)
-        df["consumption"] = self.consumption
-        df['consumption_norm'] = self.consumption_norm
-        df['production'] = self.production
-        df['production_norm'] = self.production_norm
-        df['dist_equinox'] = np.array(self.dist_equinox)
-        df2 = df.reindex(index = ind_new)
-        self.dist_equinox = df2["dist_equinox"]
-        self.consumption_norm = df2["consumption_norm"]
-        self.consumption = df2["consumption"]
-        self.production_norm = df2['production_norm']
-        self.production = df2["production"]
-
-        if self.month != []:
-            consumption = np.array([])
-            consumption_norm = np.array([])
-            production_norm = np.array([])
-            production = np.array([])
-            dist_equinox = np.array([])
-            for i in self.month:
-                consumption = np.concatenate((consumption, self.consumption[datetime2.month == i]), axis=None)
-                consumption_norm = np.concatenate((consumption_norm, self.consumption_norm[datetime2.month == i]),
-                                                  axis=None)
-                production_norm = np.concatenate((production_norm, self.production_norm[datetime2.month == i]),
-                                                 axis=None)
-                production = np.concatenate((production, self.production[datetime2.month == i]), axis=None)
-                dist_equinox = np.concatenate((dist_equinox, self.dist_equinox[datetime2.month == i]), axis=None)
-            self.production = production
-            self.production_norm = production_norm
-            self.consumption = consumption
-            self.consumption_norm = consumption_norm
-            self.dist_equinox = dist_equinox
 
         self._max_episode_steps = len(self.consumption_norm)
         print('LONGUEUR D UN EPISODE:', self._max_episode_steps)

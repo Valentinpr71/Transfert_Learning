@@ -47,7 +47,9 @@ class microgrid_control_gym(gym.Env):
         # a = (datetime2 - datetime.datetime(year, 6, 21)).days
         # b = (datetime2 - datetime.datetime(year+1, 6, 21)).days
         ##31 mars 2023 :
-        datetime4 = pd.DatetimeIndex(data.index)
+        dates=pd.DataFrame()
+        dates['ProdPV']=data[2]
+        datetime4 = pd.DatetimeIndex(dates.index)
         leap = ((datetime4.year + 1) % 4 == 0)
         aa = []
         ba = []
@@ -62,39 +64,6 @@ class microgrid_control_gym(gym.Env):
         self.consumption_norm = data[1]
         self.production = data[2]
         self.production_norm = data[3]
-        #nov 2022 : création d'un dataframe afin de renverser l'ordre des données en fonction
-        df=pd.DataFrame(index = datetime2)
-        df["consumption"] = self.consumption
-        df['consumption_norm'] = self.consumption_norm
-        df['production'] = self.production
-        df['production_norm'] = self.production_norm
-        df['dist_equinox'] = np.array(self.dist_equinox)
-        df2 = df.reindex(index = ind_new)
-        self.dist_equinox = df2["dist_equinox"]
-        self.consumption_norm = df2["consumption_norm"]
-        self.consumption = df2["consumption"]
-        self.production_norm = df2['production_norm']
-        self.production = df2["production"]
-
-        if self.month != []:
-            consumption = np.array([])
-            consumption_norm = np.array([])
-            production_norm = np.array([])
-            production = np.array([])
-            dist_equinox = np.array([])
-            for i in self.month:
-                consumption = np.concatenate((consumption, self.consumption[datetime2.month == i]), axis=None)
-                consumption_norm = np.concatenate((consumption_norm, self.consumption_norm[datetime2.month == i]),
-                                                  axis=None)
-                production_norm = np.concatenate((production_norm, self.production_norm[datetime2.month == i]),
-                                                 axis=None)
-                production = np.concatenate((production, self.production[datetime2.month == i]), axis=None)
-                dist_equinox = np.concatenate((dist_equinox, self.dist_equinox[datetime2.month == i]), axis=None)
-            self.production = production
-            self.production_norm = production_norm
-            self.consumption = consumption
-            self.consumption_norm = consumption_norm
-            self.dist_equinox = dist_equinox
 
         self._max_episode_steps = len(self.consumption_norm)
         print('LONGUEUR D UN EPISODE:', self._max_episode_steps)
