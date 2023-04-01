@@ -246,7 +246,7 @@ class main_BCQ():
 					patience = 0
 					best_eval = evaluations[-1]
 					policy0.save(f"./tests_optim/models/{setting}")
-				if patience >= 115 or best_eval == 0:
+				if patience >= 215 or best_eval == 0:
 					break
 				# else:
 				# 	policy0.save(f"./models/actual_policy_{t}_{setting}")
@@ -331,8 +331,10 @@ class main_BCQ():
 		eval_env, _, _ = utils.make_env(self.env, manager=self.manager)
 		action_list = np.array([])
 		avg_reward = 0.
+		rewards=np.array([])
 		for _ in range(eval_episodes):
-			state, done = eval_env.reset(), False
+			state = eval_env.reset()
+			done = False
 			i=0
 			while not done:
 				i+=1
@@ -340,6 +342,7 @@ class main_BCQ():
 				action_list = np.append(action_list, action)
 				state, reward, done, _ = eval_env.step(action)
 				avg_reward += reward
+				rewards=np.append(rewards, reward)
 
 		avg_reward /= eval_episodes
 

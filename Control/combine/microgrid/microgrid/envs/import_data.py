@@ -31,6 +31,7 @@ class Import_data():
         return min(self.consumption()),max(self.consumption()),min(self.production()), max(self.production())
 
     def data_cons_AutoCalSOl(self):
+        # data_1kW = pd.read_csv("data/Demo_autoconso2.csv")
         data_1kW = pd.read_csv("data/Demo_autoconso2.csv")*2
         data_1kW['Dates'] = pd.date_range('2022-01-01', periods=8760, freq='H').values
         data_1kW.set_index(data_1kW['Dates'], inplace=True)
@@ -48,16 +49,43 @@ class Import_data():
         return self.production_norm, production
 
     def treat_csv(self, dimPV, dimPVmax, filename):
-        print('HELLOOWW')
+        print('IMPORT DATA TREAT CSV')
         ##Caution, loaded data have to contain 8760 elements, and columns have to be named "ProdPV" and "Consumption". it has to be 1 kWp solar pannel production data.
         data_1kW = pd.read_csv(f"data/{filename}")
         data_1kW['Dates'] = pd.date_range('2022-01-01', periods=8760, freq='H').values
         data_1kW.set_index(data_1kW['Dates'], inplace=True)
-        data_1kW.Consumption *=2
+        #data_1kW.Consumption *=2
         self.consumption_norm = data_1kW.Consumption / data_1kW.Consumption.max()
         data_dim_max = data_1kW.copy()
         data_dim = data_1kW.copy()
-        data_dim["ProdPV"] = data_dim["ProdPV"] * dimPV*1.5
+        data_dim["ProdPV"] = data_dim["ProdPV"] * dimPV#*1.5
         data_dim_max["ProdPV"] = data_dim_max["ProdPV"] * dimPVmax
         self.production_norm = data_dim.ProdPV/data_dim_max.ProdPV.max()
         return self.consumption_norm, data_1kW.Consumption, self.production_norm, data_dim.ProdPV
+
+    def clean_data_prod_PVGISSARAH2(self, filename, periods=8760, start_time='2022-01-01'):
+        data_1kW = pd.read_csv(f"data/{filename}")
+        cons = pd.read_csv("data/Demo_autoconso2.csv")
+        data_1kW['Dates'] = pd.date_range(start_time, periods=periods, freq='H').values
+        if periods != 8760:
+            data_1kW['Dates'] = pd.date_range(start_time, periods=periods, freq='H')
+            ban_index = data_1kW.loc[(data_1kW["Dates"].dt.day == 29) & (data_1kW["Dates"].dt.month == 2)].index #Ici, je ne m'embête pas et je vire les 29 fevrier pour ne pas causer de problème à l'environnement
+            data_1kW.drop(index=ban_index, inplace=True)
+            # pd.DatetimeIndex(data=(t for t in data_1kW["Dates"] if not isleap(t.year)), freq="H")
+            cons = pd.concat([cons]*int(periods/8760), ignore_index=True)
+        data_1kW.set_index(data_1kW['Dates'], inplace=True)
+        cons.set_index(data_1kW["Dates"], inplace=True)
+        data_1kW["Consumption"] = cons["Consumption"]
+        data_1kW['ProdPV'] = data_1kW['P']
+        data = data_1kW[["ProdPV","Consumption"]]
+        return data
+
+    def split_years(self, dimPV, dimPVmax, filename, periods=8760, start_time='2022-01-01', years=[2020]):
+        data = self.clean_data_prod_PVGISSARAH2(filename, periods, start_time)
+        a = pd.DataFrame(data.loc[data.index.year == years[0]])
+        for i in years[1:]:
+            a = pd.concat([a, data.loc[data.index.year == i]])
+        a["ProdPV"]*=dimPV
+        consumption_norm = a.Consumption / a.Consumption.max()
+        production_norm = a / (a * dimPVmax).max()
+        return consumption_norm, a.Consumption, production_norm, a.ProdPV

@@ -99,6 +99,7 @@ class microgrid_control_gym(gym.Env):
         self.hydrogen_max_power = 1*1000 # PENSER À CHANGER COEFFNORM DANS LE SCRIPT MAIN.PY
         self.hydrogen_elec_eta = .65  # electrolyser eta
         self.hydrogen_PAC_eta = .5  # PAC eta
+        self.max_H2_stock = 455000
         ##self.info={"Timestep":[0],"Reward":[0],"Energy Surplus":[0]}
         self.num_episode = 0
         self.info = {}
@@ -132,6 +133,11 @@ class microgrid_control_gym(gym.Env):
             ## Energy goes into the hydrogen reserve
             true_energy_avail_from_hydrogen = self.hydrogen_max_power
             diff_hydrogen = self.hydrogen_max_power * self.hydrogen_elec_eta
+            if self.hydrogen_storage[-1]+diff_hydrogen>self.max_H2_stock:
+                #On vérifie si on ne dépasse pas la quantité de H2 max. Si c'est le cas, on charge jusqu'à ce qu'il soit rempli. Sinon, on charge normalement.
+                diff_hydrogen=self.max_H2_stock-self.hydrogen_storage[-1]
+                #On peut donc effacer (1/etaH2) fois cette puissance.
+                true_energy_avail_from_hydrogen = diff_hydrogen*(1/self.hydrogen_elec_eta)
 
         Energy_needed_from_battery = true_demand + true_energy_avail_from_hydrogen
 
@@ -192,7 +198,7 @@ class microgrid_control_gym(gym.Env):
         self._last_ponctual_observation[1] = self.consumption_norm[self.counter]
         self._last_ponctual_observation[2] = self.production_norm[self.counter]
         self._last_ponctual_observation[3] = self.dist_equinox[self.counter] / 182
-        # self._last_ponctual_observation[4] = self.hydrogen_storage[-1]/self.normH2
+        # self._last_ponctual_observation[4] = self.hydrogen_storage[-1]/self.max_H2_stock
         # print("counter :", self.counter, "dist equinoxe : ", self.dist_equinox[self.counter],"last obs 0 : ",self._last_ponctual_observation[0], 'reward : ',reward)
         obs = self._last_ponctual_observation
         self.hydrogen_storage.append(self.hydrogen_storage[-1] + diff_hydrogen)
@@ -263,7 +269,7 @@ class microgrid_control_gym(gym.Env):
         # if self.counter>3000:
         #Tableur['Excess Energy'] = self.info[2]
         Tableur['Battery Storage'] = self.battery_storage
-        Tableur['Hydrogen_storage'] = self.hydrogen_storage
+        Tableur['Hydrogen_storage'] = self.hydrogen_storage#/self.max_H2_stock
         Tableur['Energy Bought'] = self.energy_bought
         Tableur['Energy Sold'] = self.energy_sold
         # Tableur.to_csv('render.csv', sep=',')
