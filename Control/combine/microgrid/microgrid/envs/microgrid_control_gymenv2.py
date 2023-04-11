@@ -80,8 +80,8 @@ class microgrid_control_gym(gym.Env):
         ##self.info={"Timestep":[0],"Reward":[0],"Energy Surplus":[0]}
         self.num_episode = 0
         self.info = {}
-        ### On a rajouté l'observation de la quantité d'H2 produite à l'agent. Il faut le normer par un nombre
-        self.normH2 = 2.1*8760
+        # ### On a rajouté l'observation de la quantité d'H2 produite à l'agent. Il faut le normer par un nombre
+        # self.normH2 = 2.1*8760
 
     def step(self, action):
         # arf=""

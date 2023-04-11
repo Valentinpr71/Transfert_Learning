@@ -29,7 +29,9 @@ class main_dim():
         # consumption_norm = import_data._consumption_norm()
         # consumption_norm, consumption = import_data.data_cons_AutoCalSOl()
         # VP 01/04/2023
-        consumption_norm, consumption, production_norm, ProdPV = import_data.split_years(5,17,'2010_2020_SARAH2.csv', periods=96432, start_time='2010-01-01', years = [2010, 2013, 2015])
+        consumption_norm, consumption, production_norm, production = import_data.split_years(5, 17, '2010_2020_SARAH2.csv',
+                                                                                periods=96432, start_time='2010-01-01',
+                                                                                years=[2018])
         self.manager.add_data_cons(data_cons=consumption, data_cons_norm=consumption_norm)
 
         ### Arguments ne variant pas pour le main BCQ:
@@ -70,7 +72,7 @@ class main_dim():
         #cons_norm, cons, production_norm, production = import_data.treat_csv(dim[0], dim_boundaries['PV']['high'], "clean_PV_GIS_2018_SARAH2.csv")
         cons_norm, cons, production_norm, production = import_data.split_years(5, 17, '2010_2020_SARAH2.csv',
                                                                                 periods=96432, start_time='2010-01-01',
-                                                                                years=[2010, 2013, 2015])
+                                                                                years=[2013, 2016, 2020])
         self.manager.add_data_prod(data_prod=production, data_prod_norm=production_norm)
         ### Initialisation de l'env, prend 0seconde
         BCQ = main_BCQ(env=env, manager=self.manager, seed=seed, buffer_name=buffer_name, max_timestep=max_timestep,
