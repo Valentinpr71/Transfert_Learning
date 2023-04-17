@@ -1,6 +1,7 @@
 from discrete_BCQ.main_iter import main_BCQ
 from microgrid.envs.import_data import Import_data
 from buffer_tools.hash_manager import Dim_manager
+from buffer_tools.battery2 import Battery
 import pandas as pd
 import numpy as np
 from os.path import exists
@@ -11,6 +12,7 @@ class main_dim():
     def __init__(self, distance, nb_voisins):
         self.dicto = {}
         self.manager = Dim_manager(distance=distance, nb_voisins=nb_voisins)
+
 
     def is_know_in_section(self, dimPV, dimbatt):
         import_data = Import_data(mode="train")
@@ -23,6 +25,7 @@ class main_dim():
 
     def iterations_dim(self, dimPV, dimbatt):
         trained_already = 0
+        self.batt = Battery(type='non-linear', dim = dimbatt)
         dim_boundaries = {'PV': {'low': 0, 'high': 17}, 'batt': {'low': 0, 'high': 15}}
         import_data = Import_data(mode="train")
         # consumption = import_data.consumption()
@@ -76,7 +79,7 @@ class main_dim():
         self.manager.add_data_prod(data_prod=production, data_prod_norm=production_norm)
         ### Initialisation de l'env, prend 0seconde
         BCQ = main_BCQ(env=env, manager=self.manager, seed=seed, buffer_name=buffer_name, max_timestep=max_timestep,
-                       BCQ_threshold=BCQ_threshold, low_noise_p=low_noise_p, rand_action_p=rand_action_p, already_trained=trained_already)
+                       BCQ_threshold=BCQ_threshold, low_noise_p=low_noise_p, rand_action_p=rand_action_p, already_trained=trained_already, battery=self.batt)
         score, temps, tau_autoprod, tau_autocons = BCQ.Iterate(temps)
         obj = (score*0.2*1e-3) + price_PV + price_batt
         # print("TEMPS DE CALCUL : ", temps)

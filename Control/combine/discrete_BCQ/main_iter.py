@@ -20,7 +20,7 @@ from Tuple_ech import Interact
 from torch.utils.tensorboard import SummaryWriter
 
 class main_BCQ():
-	def __init__(self, env, manager, seed=0, buffer_name="Default", max_timestep=1e6, BCQ_threshold=0.3, low_noise_p=0.1, rand_action_p=0.3, already_trained=0):
+	def __init__(self, env, manager, seed=0, buffer_name="Default", max_timestep=1e6, BCQ_threshold=0.3, low_noise_p=0.1, rand_action_p=0.3, already_trained=0, battery=None):
 		self.writer = SummaryWriter()
 		self.already_trained = already_trained
 		# self.regular_parameters = {
@@ -92,6 +92,7 @@ class main_BCQ():
 
 		# Load parameters
 		self.env = env
+		self.batt=battery
 		self.seed = seed
 		self.buffer_name = buffer_name
 		self.max_timestep = max_timestep
@@ -328,7 +329,7 @@ class main_BCQ():
 	# A fixed seed is used for the eval environment
 	def eval_policy(self, policy, eval_episodes=1):
 		print('MANAGER.DIM : ', self.manager)
-		eval_env, _, _ = utils.make_env(self.env, manager=self.manager)
+		eval_env, _, _ = utils.make_env(self.env, manager=self.manager, battery = self.batt)
 		action_list = np.array([])
 		avg_reward = 0.
 		rewards=np.array([])

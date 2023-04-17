@@ -12,7 +12,7 @@ class microgrid_control_gym(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, plot_every=10, ppc=None, sell_to_grid=True, total_timesteps=8760, month=[], dim=[12., 15.],#total_timestep ne sert que lorsque l'on déplace la date initiale de simulation.
-                 data=[], date_initiale="2010-01-01"):#,date_initiale="2010-06-21"):  # ,month=[9,10,11,12,1,2]):
+                 data=[], date_initiale="2010-01-01", battery=None):#,date_initiale="2010-06-21"):  # ,month=[9,10,11,12,1,2]):
         print("dim :  eff", dim)
         self._max_episode_steps = len(data)
         self.month = month

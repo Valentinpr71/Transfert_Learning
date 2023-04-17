@@ -174,8 +174,8 @@ class AtariPreprocessing(object):
 
 
 # Create environment, add wrapper if necessary and create env_properties
-def make_env(env_name, manager):
-    env = gym.make(env_name, dim=manager.dim, data=manager.data)
+def make_env(env_name, manager, battery):
+    env = gym.make(env_name, dim=manager.dim, data=manager.data, battery=battery)
 
     # env = env
 
