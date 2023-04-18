@@ -20,7 +20,7 @@ from taux_mensuels import taux_mensuels
 
 
 # simulated annealing algorithm
-def simulated_annealing(objective = main_dim(2,1), varbound=np.array([[3, 11], [2, 12]]), n_iterations=1, stepsize=np.array([3,3]), temp=10, batt=battery):
+def simulated_annealing(objective = main_dim(2,1), varbound=np.array([[3, 11], [2, 12]]), n_iterations=1, stepsize=np.array([3,3]), temp=10):
     #The temperature has been taken as the opposite of the DQN agent score for test environment in [10,10] PV/batt sizing (we will try to minimize the opposite of the penalty here)
     taux_autoprod, taux_autocons = [], []
     # generate an initial point

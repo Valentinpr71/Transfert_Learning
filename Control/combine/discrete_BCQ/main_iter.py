@@ -359,7 +359,7 @@ class main_BCQ():
 		# np.random.seed(seed=int(time.time()))
 
 		len_episode = 8760
-		env, self.state_dim, self.num_action = utils.make_env(self.env, self.manager)
+		env, self.state_dim, self.num_action = utils.make_env(self.env, self.manager, self.batt)
 		parents = self.manager.choose_parents()
 		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 		tau_autoprod, tau_autocons = [], []

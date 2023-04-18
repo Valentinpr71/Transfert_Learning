@@ -34,7 +34,7 @@ class microgrid_control_gym(gym.Env):
         # State space:
         self.observation_space = spaces.Box(low=np.array([0., 0., 0., 0.]), high=np.array([1., 1., 1., 1]))
         # self.observation_space = spaces.Box(low=np.array([0., 0., 0., 0., 0.]), high=np.array([1., 1., 1., 1, 1.]))
-
+        self.batt=battery
         #nov2022 : Ajout de l'aspect "Date initiale" de la simulation
         dates2 = pd.date_range(date_initiale, periods=total_timesteps, freq='H').values
         datetime3 = pd.DatetimeIndex(dates2)
@@ -120,57 +120,62 @@ class microgrid_control_gym(gym.Env):
 
         if (Energy_needed_from_battery > 0):
             # Lack of energy
+            self._last_ponctual_observation[0], energy_bought = self.batt.discharge(Energy_needed_from_battery)
+            self.energy_bought.append(energy_bought)
             self.energy_sold.append(0)
-            if (self._last_ponctual_observation[0] * self.battery_size * self.battery_eta > Energy_needed_from_battery):
-                self.energy_bought.append(0)
-                # If enough energy in the battery, use it
-                self._last_ponctual_observation[0] = self._last_ponctual_observation[0] - Energy_needed_from_battery / (
-                        self.battery_size * self.battery_eta)  # battery_eta au dénominateur car on décharge, on doit fournir plus d'éléctricité avec le rendement pris en compte
-            else:
-                # Otherwise: use what is left and then penalty
-                self.energy_bought.append(Energy_needed_from_battery - self._last_ponctual_observation[
-                    0] * self.battery_size * self.battery_eta)  # On décharge tout quoiqu'il arrive dans cette situation, donc eta au nominateur pour savoir de combien on a déchargé
-                reward -= (Energy_needed_from_battery - self._last_ponctual_observation[
-                    0] * self.battery_size * self.battery_eta)
-                # On est obligé de pomper dans le réseau central au prix de 2€/kWh
-                self._last_ponctual_observation[0] = 0
-        elif Energy_needed_from_battery == 0:
-            self.energy_bought.append(0)
-        elif Energy_needed_from_battery < 0:
+        #     if (self._last_ponctual_observation[0] * self.battery_size * self.battery_eta > Energy_needed_from_battery):
+        #         self.energy_bought.append(0)
+        #         # If enough energy in the battery, use it
+        #         self._last_ponctual_observation[0] = self._last_ponctual_observation[0] - Energy_needed_from_battery / (
+        #                 self.battery_size * self.battery_eta)  # battery_eta au dénominateur car on décharge, on doit fournir plus d'éléctricité avec le rendement pris en compte
+        #     else:
+        #         # Otherwise: use what is left and then penalty
+        #         self.energy_bought.append(Energy_needed_from_battery - self._last_ponctual_observation[
+        #             0] * self.battery_size * self.battery_eta)  # On décharge tout quoiqu'il arrive dans cette situation, donc eta au nominateur pour savoir de combien on a déchargé
+        #         reward -= (Energy_needed_from_battery - self._last_ponctual_observation[
+        #             0] * self.battery_size * self.battery_eta)
+            reward -= energy_bought
+        #         # On est obligé de pomper dans le réseau central au prix de 2€/kWh
+        #         self._last_ponctual_observation[0] = 0
+        # elif Energy_needed_from_battery == 0:
+        #     self.energy_bought.append(0)
+        elif Energy_needed_from_battery <= 0:
             self.energy_bought.append(0)
             # Surplus of energy --> load the battery
-            if min(1., self._last_ponctual_observation[0] - (
-                    Energy_needed_from_battery / self.battery_size) * self.battery_eta) == 1. and self.sell_to_grid:
-                # If the battery is full and there is a surplus of energy, sell it to the grid at 0.5€ per kW. As the (mean of production is 1.5 kW), we define self.ppc_power_constraint as the PCC threshold
-                if self.ppc_power_constraint == None:
-                    # reward -= (self._last_ponctual_observation[
-                    #                0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1) * 0.5  # 27 juin : J'ai multiplié par eta plutot que de diviser et rajouté un -1 pour ce qui concerne le surplus d'énergie # octobre 22: pas sûr pour le -1 (analyse dim)
-
-                    #### VP mars 23 : On enlève la récompense ici puisque l'agent ne minimise plus l'énergie vendue au grid, même s'il en vent (osef de l'énergie vendu alors que sell_to_grid =True
-                    ####reward -= (-1*Energy_needed_from_battery) - ((1.0*self.battery_size-(self._last_ponctual_observation[0]*self.battery_size))/self.battery_eta) #octobre : R = energy needed -(taille batt -(energie)) pour n'avoir que le surplus on divise par eta car on ne pénalise pas l'énergie perdu dans le rendement de charge, ce n'est pas une énergie vendue
-                    # self.energy_sold.append(self._last_ponctual_observation[
-                    #                             0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1)  # 27 juin : idem
-                    #jan 2023 :
-                    self.energy_sold.append((-1*Energy_needed_from_battery) - ((1.0*self.battery_size-(self._last_ponctual_observation[0]*self.battery_size))/self.battery_eta))
-                else:
-                    threshold = min(self.ppc_power_constraint, self._last_ponctual_observation[
-                        0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1)  # 27 juin : idem
-                    if threshold == self.ppc_power_constraint:  # If the surplus>PCC max power
-                        reward -= self.ppc_power_constraint #* 0.5
-                        self.energy_sold.append(self.ppc_power_constraint)
-                    else:
-                        reward -= (self._last_ponctual_observation[
-                                       0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1)
-                        self.energy_sold.append(self._last_ponctual_observation[
-                                                    0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1)  # 27 juin:idem
-
-            elif min(1., self._last_ponctual_observation[
-                             0] - Energy_needed_from_battery / self.battery_size * self.battery_eta) == 1. and self.sell_to_grid == False:
-                # batterie remplie mais pas de vente au grid
-                self.energy_sold.append(0)
-            else:  # batterie pas remplie donc pas de surplus ni de vente
-                self.energy_sold.append(0)
-            self._last_ponctual_observation[0] = min(1., self._last_ponctual_observation[0] - (Energy_needed_from_battery / self.battery_size) * self.battery_eta)
+            self._last_ponctual_observation[0], energy_sold = self.batt.charge(Energy_needed_from_battery)
+            self.energy_sold.append(energy_sold)
+            # if min(1., self._last_ponctual_observation[0] - (
+            #         Energy_needed_from_battery / self.battery_size) * self.battery_eta) == 1. and self.sell_to_grid:
+            #     # If the battery is full and there is a surplus of energy, sell it to the grid at 0.5€ per kW. As the (mean of production is 1.5 kW), we define self.ppc_power_constraint as the PCC threshold
+            #     if self.ppc_power_constraint == None:
+            #         # reward -= (self._last_ponctual_observation[
+            #         #                0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1) * 0.5  # 27 juin : J'ai multiplié par eta plutot que de diviser et rajouté un -1 pour ce qui concerne le surplus d'énergie # octobre 22: pas sûr pour le -1 (analyse dim)
+            #
+            #         #### VP mars 23 : On enlève la récompense ici puisque l'agent ne minimise plus l'énergie vendue au grid, même s'il en vent (osef de l'énergie vendu alors que sell_to_grid =True
+            #         ####reward -= (-1*Energy_needed_from_battery) - ((1.0*self.battery_size-(self._last_ponctual_observation[0]*self.battery_size))/self.battery_eta) #octobre : R = energy needed -(taille batt -(energie)) pour n'avoir que le surplus on divise par eta car on ne pénalise pas l'énergie perdu dans le rendement de charge, ce n'est pas une énergie vendue
+            #         # self.energy_sold.append(self._last_ponctual_observation[
+            #         #                             0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1)  # 27 juin : idem
+            #         #jan 2023 :
+            #         self.energy_sold.append((-1*Energy_needed_from_battery) - ((1.0*self.battery_size-(self._last_ponctual_observation[0]*self.battery_size))/self.battery_eta))
+            #     else:
+            #         threshold = min(self.ppc_power_constraint, self._last_ponctual_observation[
+            #             0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1)  # 27 juin : idem
+            #         if threshold == self.ppc_power_constraint:  # If the surplus>PCC max power
+            #             reward -= self.ppc_power_constraint #* 0.5
+            #             self.energy_sold.append(self.ppc_power_constraint)
+            #         else:
+            #             reward -= (self._last_ponctual_observation[
+            #                            0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1)
+            #             self.energy_sold.append(self._last_ponctual_observation[
+            #                                         0] * self.battery_size - Energy_needed_from_battery * self.battery_eta - 1)  # 27 juin:idem
+            #
+            # elif min(1., self._last_ponctual_observation[
+            #                  0] - Energy_needed_from_battery / self.battery_size * self.battery_eta) == 1. and self.sell_to_grid == False:
+            #     # batterie remplie mais pas de vente au grid
+            #     self.energy_sold.append(0)
+            # else:  # batterie pas remplie donc pas de surplus ni de vente
+            #     self.energy_sold.append(0)
+            # self._last_ponctual_observation[0] = min(1., self._last_ponctual_observation[0] - (Energy_needed_from_battery / self.battery_size) * self.battery_eta)
         self.battery_storage.append(self._last_ponctual_observation[0]*self.battery_size)
         self._last_ponctual_observation[1] = self.consumption_norm[self.counter]
         self._last_ponctual_observation[2] = self.production_norm[self.counter]
@@ -191,6 +196,7 @@ class microgrid_control_gym(gym.Env):
         """
         return:  First observations after the reset (begining of an episode)
         """
+        self.batt.reset()
         self.energy_bought = [0]
         self.energy_sold = [0]
         self.counter = 1
@@ -245,10 +251,11 @@ class microgrid_control_gym(gym.Env):
         Tableur['Net demand'] = self.consumption-self.production#Tableur['Consumption'] - Tableur['PV production']
         # if self.counter>3000:
         #Tableur['Excess Energy'] = self.info[2]
-        Tableur['Battery Storage'] = self.battery_storage
-        Tableur['Hydrogen_storage'] = self.hydrogen_storage#/self.max_H2_stock
+
         Tableur['Energy Bought'] = self.energy_bought
         Tableur['Energy Sold'] = self.energy_sold
+        Tableur['Battery Storage'] = self.battery_storage
+        Tableur['Hydrogen_storage'] = self.hydrogen_storage#/self.max_H2_stock
         # Tableur.to_csv('render.csv', sep=',')
         return Tableur
 

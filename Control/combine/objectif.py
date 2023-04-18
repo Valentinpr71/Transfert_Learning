@@ -34,7 +34,7 @@ class main_dim():
         # VP 01/04/2023
         consumption_norm, consumption, production_norm, production = import_data.split_years(5, 17, '2010_2020_SARAH2.csv',
                                                                                 periods=96432, start_time='2010-01-01',
-                                                                                years=[2018])
+                                                                                years=[2013, 2016, 2020])
         self.manager.add_data_cons(data_cons=consumption, data_cons_norm=consumption_norm)
 
         ### Arguments ne variant pas pour le main BCQ:
