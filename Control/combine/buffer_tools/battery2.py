@@ -38,10 +38,10 @@ class Battery():
         else:
             energy_sold = 0
         self.SOC = min(self.C / self.Cmax, self.SOC - ((delta / self.Cmax) * self.eta))
-        self.C = self.C - self.C * self.deg(DOD, (1 - self.SOC)) / 100
+        self.C = self.C - self.C * self.deg(DOD, (1 - self.SOC))
         # self.SOC = min(self.SOC*self.C,self.SOC-((delta/self.Cmax)*self.eta))
 
-        return self.SOC, energy_sold
+        return self.SOC, energy_sold, 1-(self.C/self.Cmax)
 
     def discharge(self, delta):
         DOD = 1-self.SOC
@@ -54,8 +54,8 @@ class Battery():
             energy_restored = self.SOC*self.Cmax*self.eta
             self.SOC = 0.
             energy_bought = min(delta-energy_restored, delta)
-        self.C = self.C - self.C*self.deg(DOD, (1-self.SOC))/100
-        return self.SOC, energy_bought
+        self.C = self.C - self.C*self.deg(DOD, (1-self.SOC))
+        return self.SOC, energy_bought, 1-(self.C/self.Cmax)
 
     def reset(self):
         self.SOC=self.SOC_ini
