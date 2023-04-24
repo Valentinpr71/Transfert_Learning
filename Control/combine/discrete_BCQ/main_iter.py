@@ -69,11 +69,11 @@ class main_BCQ():
 			# Evaluation
 			#"eval_freq": 8759,#Attention c'est en nombre de step et pas en nombre d'épisodes
 			# "eval_freq": 8760,
-			"eval_freq": 2920,
+			"eval_freq": 2920*3,
 			"eval_eps": 0,
 			# Learning
 			"discount": 0.99,
-			"buffer_size": 1e6,
+			"buffer_size": 6e6,
 			# "batch_size": 128,
 			"batch_size": 256,
 			"optimizer": "Adam",

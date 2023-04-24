@@ -33,13 +33,15 @@ class Battery():
         # if min(self.SOC*self.C, self.SOC-(delta/self.Cmax)*self.eta)==self.SOC*self.C:
             #Excess energy considering maximum capacity with degradation of the battery
             # energy_sold = -delta-(1.*self.C-((self.SOC*self.Cmax)/self.eta))
-            energy_sold = min(-delta - (self.C - (self.SOC * self.Cmax)),-delta)
-            # print(self.SOC, self.SOC*self.Cmax, self.C)
+            energy_sold = min(-delta - (self.C - (self.SOC * self.C)),-delta)
+
         else:
             energy_sold = 0
-        self.SOC = min(self.C / self.Cmax, self.SOC - ((delta / self.Cmax) * self.eta))
+        # self.SOC = min(self.C / self.Cmax, self.SOC - ((delta / self.Cmax) * self.eta))
+        ### Tentative de train avec le SOC calculé en fonction de C et non Cmax:
+        self.SOC = min(1., self.SOC - ((delta / self.C) * self.eta))
         self.C = self.C - self.C * self.deg(DOD, (1 - self.SOC))
-        # self.SOC = min(self.SOC*self.C,self.SOC-((delta/self.Cmax)*self.eta))
+
 
         return self.SOC, energy_sold, 1-(self.C/self.Cmax)
 
@@ -47,11 +49,11 @@ class Battery():
         DOD = 1-self.SOC
         if self.SOC*self.Cmax*self.eta>=delta:
             #If there is enough stored energy, use it
-            self.SOC = self.SOC-delta/(self.Cmax*self.eta)
+            self.SOC = self.SOC-delta/(self.C*self.eta)
             energy_bought = 0
         else:
             #else use what is available and buy the remaining energy
-            energy_restored = self.SOC*self.Cmax*self.eta
+            energy_restored = self.SOC*self.C*self.eta
             self.SOC = 0.
             energy_bought = min(delta-energy_restored, delta)
         self.C = self.C - self.C*self.deg(DOD, (1-self.SOC))
