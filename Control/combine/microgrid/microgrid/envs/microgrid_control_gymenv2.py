@@ -76,7 +76,8 @@ class microgrid_control_gym(gym.Env):
         self.hydrogen_max_power = 1*1000 # PENSER À CHANGER COEFFNORM DANS LE SCRIPT MAIN.PY
         self.hydrogen_elec_eta = .65  # electrolyser eta
         self.hydrogen_PAC_eta = .5  # PAC eta
-        self.max_H2_stock = 455000
+        self.max_H2_stock = 700000
+        # self.max_H2_stock = 455000 #(700*0.65)
         ##self.info={"Timestep":[0],"Reward":[0],"Energy Surplus":[0]}
         self.num_episode = 0
         self.info = {}
@@ -121,6 +122,7 @@ class microgrid_control_gym(gym.Env):
         if (Energy_needed_from_battery > 0):
             # Lack of energy
             self._last_ponctual_observation[0], energy_bought, deg = self.batt.discharge(Energy_needed_from_battery)
+            reward -= (deg-(self._last_ponctual_observation[4]*0.5))*1000000
             self.energy_bought.append(energy_bought)
             self.energy_sold.append(0)
         #     if (self._last_ponctual_observation[0] * self.battery_size * self.battery_eta > Energy_needed_from_battery):
@@ -143,6 +145,7 @@ class microgrid_control_gym(gym.Env):
             self.energy_bought.append(0)
             # Surplus of energy --> load the battery
             self._last_ponctual_observation[0], energy_sold, deg = self.batt.charge(Energy_needed_from_battery)
+            reward -= (deg - (self._last_ponctual_observation[4] * 0.5))*1000000
             self.energy_sold.append(energy_sold)
             # if min(1., self._last_ponctual_observation[0] - (
             #         Energy_needed_from_battery / self.battery_size) * self.battery_eta) == 1. and self.sell_to_grid:
@@ -187,6 +190,7 @@ class microgrid_control_gym(gym.Env):
         self.hydrogen_storage.append(self.hydrogen_storage[-1] + diff_hydrogen)
         self.counter += 1
         self.reward = reward
+
         # jan 2023 :  on coupe render_to_file pour le moment, on le rendra dispo lors de évaluations des politiques pour analyses
         # if self.num_episode-self.max_episode==0.:
         #     self.render_to_file()
