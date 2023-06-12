@@ -100,7 +100,8 @@ class main_BCQ():
 		self.BCQ_threshold = BCQ_threshold
 		self.low_noise_p = low_noise_p
 		self.rand_action_p = rand_action_p
-		self.manager = manager
+		self.manager = manager[0]
+		self.manager_test = manager[1]
 
 
 
@@ -261,7 +262,7 @@ class main_BCQ():
 # On enlève le else, on sauvegarde le replay buffer dans tous les cas pour voir ce qu'il s'y passe
 		# else:
 		replay_buffer.save(f"./tests_optim/buffers/{buffer_name}")
-
+		np.save('deg_finale_batt', self.deg_finale_batt)
 		# Save final buffer and performance
 		if not self.generate_buffer:
 			evaluations.append(self.eval_policy(policy0))
@@ -331,7 +332,7 @@ class main_BCQ():
 	# A fixed seed is used for the eval environment
 	def eval_policy(self, policy, eval_episodes=1):
 		print('MANAGER.DIM : ', self.manager)
-		eval_env, _, _ = utils.make_env(self.env, manager=self.manager, battery = self.batt)
+		eval_env, _, _ = utils.make_env(self.env, manager=self.manager_test, battery = self.batt)
 		action_list = np.array([])
 		avg_reward = 0.
 		rewards=np.array([])

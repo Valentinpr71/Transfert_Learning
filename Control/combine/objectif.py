@@ -76,9 +76,14 @@ class main_dim():
         cons_norm, cons, production_norm, production = import_data.split_years(5, 17, '2010_2020_SARAH2.csv',
                                                                                 periods=96432, start_time='2010-01-01',
                                                                                 years=[2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019])
+        cons_norm_test, cons_test, production_norm_test, production_test = import_data.split_years(5, 17, 'PV_GIS_2005_2020_TOULOUSE_SARAH2.csv',
+                                                                                periods=140256, start_time='2010-01-01',
+                                                                                years=[2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019])
+        manager_test = self.manager
         self.manager.add_data_prod(data_prod=production, data_prod_norm=production_norm)
+        manager_test.add_data_prod(data_prod=production_test, data_prod_norm=production_norm_test)
         ### Initialisation de l'env, prend 0seconde
-        BCQ = main_BCQ(env=env, manager=self.manager, seed=seed, buffer_name=buffer_name, max_timestep=max_timestep,
+        BCQ = main_BCQ(env=env, manager=[self.manager, manager_test], seed=seed, buffer_name=buffer_name, max_timestep=max_timestep,
                        BCQ_threshold=BCQ_threshold, low_noise_p=low_noise_p, rand_action_p=rand_action_p, already_trained=trained_already, battery=self.batt)
         score, temps, tau_autoprod, tau_autocons = BCQ.Iterate(temps)
         obj = (score*0.2*1e-3) + price_PV + price_batt
