@@ -33,7 +33,7 @@ class microgrid_control_gym(gym.Env):
         self.plot_every = plot_every
         # State space:
         # self.observation_space = spaces.Box(low=np.array([0., 0., 0., 0.]), high=np.array([1., 1., 1., 1]))
-        self.observation_space = spaces.Box(low=np.array([0., 0., 0., 0., 0.]), high=np.array([1., 1., 1., 1, 1.]))
+        self.observation_space = spaces.Box(low=np.array([0., 0., 0., 0., 0., 0.]), high=np.array([1., 1., 1., 1, 1., 1.]))
         self.batt=battery
         #nov2022 : Ajout de l'aspect "Date initiale" de la simulation
         dates2 = pd.date_range(date_initiale, periods=total_timesteps, freq='H').values
@@ -184,7 +184,7 @@ class microgrid_control_gym(gym.Env):
         self._last_ponctual_observation[2] = self.production_norm[self.counter]
         self._last_ponctual_observation[3] = self.dist_equinox[self.counter] / 182
         self._last_ponctual_observation[4] = (deg/0.5)
-        # self._last_ponctual_observation[4] = self.hydrogen_storage[-1]/self.max_H2_stock
+        self._last_ponctual_observation[5] = self.hydrogen_storage[-1]/self.max_H2_stock
         # print("counter :", self.counter, "dist equinoxe : ", self.dist_equinox[self.counter],"last obs 0 : ",self._last_ponctual_observation[0], 'reward : ',reward)
         obs = self._last_ponctual_observation
         self.hydrogen_storage.append(self.hydrogen_storage[-1] + diff_hydrogen)
@@ -218,7 +218,7 @@ class microgrid_control_gym(gym.Env):
         #nov 2022 : on return aussi les données pour pouvoir les visualiser en changeant le point de départ
         # print(np.array([1., 0., 0., self.dist_equinox[self.counter - 1] / 182]), self.production, self.consumption)
         # return(np.array([1., 0., 0., self.dist_equinox[self.counter - 1] / 182]))#, self.production, self.consumption)
-        return(np.array([1., 0., 0., self.dist_equinox[self.counter - 1] / 182, 0.]))#, self.production, self.consumption)
+        return(np.array([1., 0., 0., self.dist_equinox[self.counter - 1] / 182, 0.]), 0.)#, self.production, self.consumption)
 
     def render(self):
         pass
