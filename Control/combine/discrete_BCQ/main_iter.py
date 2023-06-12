@@ -62,11 +62,11 @@ class main_BCQ():
 			"euclidian_dist": 1,
 			# Exploration
 			### Modifié pour l'abaisser dans les épisodes en low noise
-			"start_timesteps": 8760*10, #nombre de step avant de ne plus prendre que des actions aléatoires
+			"start_timesteps": 8760*3, #nombre de step avant de ne plus prendre que des actions aléatoires
 			"initial_eps": 0.1,
 			"end_eps": 0.001,
 			# "eps_decay_period": 25e4,
-			"eps_decay_period": 250e4,
+			"eps_decay_period": 75e4,
 			# Evaluation
 			#"eval_freq": 8759,#Attention c'est en nombre de step et pas en nombre d'épisodes
 			# "eval_freq": 8760,
@@ -74,7 +74,7 @@ class main_BCQ():
 			"eval_eps": 0,
 			# Learning
 			"discount": 0.99,
-			"buffer_size": 10e6,
+			"buffer_size": 3e6,
 			# "batch_size": 128,
 			"batch_size": 256,
 			"optimizer": "Adam",

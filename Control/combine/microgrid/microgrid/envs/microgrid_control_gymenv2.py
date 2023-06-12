@@ -76,7 +76,7 @@ class microgrid_control_gym(gym.Env):
         self.hydrogen_max_power = 1*1000 # PENSER À CHANGER COEFFNORM DANS LE SCRIPT MAIN.PY
         self.hydrogen_elec_eta = .65  # electrolyser eta
         self.hydrogen_PAC_eta = .5  # PAC eta
-        self.max_H2_stock = 700000
+        self.max_H2_stock = 550000
         # self.max_H2_stock = 455000 #(700*0.65)
         ##self.info={"Timestep":[0],"Reward":[0],"Energy Surplus":[0]}
         self.num_episode = 0
@@ -208,7 +208,7 @@ class microgrid_control_gym(gym.Env):
         print("RESET : " + str(self.num_episode))
         self.num_episode += 1
         self.trades = []
-        self._last_ponctual_observation = [1., 0., 0., self.dist_equinox[self.counter - 1] / 182, 0.]
+        self._last_ponctual_observation = [1., 0., 0., self.dist_equinox[self.counter - 1] / 182, 0., 0.]
         # self._last_ponctual_observation = [1., 0., 0., self.dist_equinox[self.counter - 1] / 182]
 
         ##self.info = {"Timestep": [0], "Reward": [0],"Energy Surplus":[0]}
@@ -218,7 +218,7 @@ class microgrid_control_gym(gym.Env):
         #nov 2022 : on return aussi les données pour pouvoir les visualiser en changeant le point de départ
         # print(np.array([1., 0., 0., self.dist_equinox[self.counter - 1] / 182]), self.production, self.consumption)
         # return(np.array([1., 0., 0., self.dist_equinox[self.counter - 1] / 182]))#, self.production, self.consumption)
-        return(np.array([1., 0., 0., self.dist_equinox[self.counter - 1] / 182, 0.]), 0.)#, self.production, self.consumption)
+        return(np.array([1., 0., 0., self.dist_equinox[self.counter - 1] / 182, 0., 0.]))#, self.production, self.consumption)
 
     def render(self):
         pass
