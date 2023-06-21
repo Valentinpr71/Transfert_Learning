@@ -66,7 +66,7 @@ class main_BCQ():
 			"initial_eps": 0.1,
 			"end_eps": 0.001,
 			# "eps_decay_period": 25e4,
-			"eps_decay_period": 75e4,
+			"eps_decay_period": 250e4,
 			# Evaluation
 			#"eval_freq": 8759,#Attention c'est en nombre de step et pas en nombre d'épisodes
 			# "eval_freq": 8760,
@@ -74,12 +74,12 @@ class main_BCQ():
 			"eval_eps": 0,
 			# Learning
 			"discount": 0.99,
-			"buffer_size": 3e6,
+			"buffer_size": 10e6,
 			# "batch_size": 128,
 			"batch_size": 256,
 			"optimizer": "Adam",
 			"optimizer_parameters": {
-				"lr": 1e-4
+				"lr": 1e-3
 				# "lr": 3e-4
 			},
 			"train_freq": 730,
@@ -252,6 +252,10 @@ class main_BCQ():
 				if patience >= 215*10 or best_eval == 0:
 					np.save('deg_finale_batt', self.deg_finale_batt)
 					break
+				# if patience >= 500:# or best_eval == 0:
+				# 	print("Chargement de la meilleure politique après avoir atteint le seuil de patience")
+				# 	policy0.load(f"./tests_optim/models/MicrogridControlGym-v0_{self.manager._create_hashkey()}")
+				# 	patience=0
 				# else:
 				# 	policy0.save(f"./models/actual_policy_{t}_{setting}")
 

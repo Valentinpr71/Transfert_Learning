@@ -34,13 +34,13 @@ class main_dim():
         # VP 01/04/2023
         consumption_norm, consumption, production_norm, production = import_data.split_years(5, 17, '2010_2020_SARAH2.csv',
                                                                                 periods=96432, start_time='2010-01-01',
-                                                                                years=[2010, 2011, 2012])
+                                                                                years=[2010, 2011, 2012, 2013])
         self.manager.add_data_cons(data_cons=consumption, data_cons_norm=consumption_norm)
 
         ### Arguments ne variant pas pour le main BCQ:
         env = "MicrogridControlGym-v0"
         seed = 1
-        max_timestep = 3e6  # Nombre d'iteration si generate buffer ou train_behavioral. C'est le nombre de tuples utilisés
+        max_timestep = 10e6  # Nombre d'iteration si generate buffer ou train_behavioral. C'est le nombre de tuples utilisés
         buffer_name = "Essai_0" #préfixe au nom du fichier
         BCQ_threshold = 0.3 #tau expliqué sur le README pour Discrete BCQ
         low_noise_p = 0.1 #probabilité que l'épisode soit avec une faible exploration epsilon, dans le cas contraire, il prendra une décision aléatoire avec un taux égal à l'argument rand_action_p
@@ -76,12 +76,12 @@ class main_dim():
         cons_norm, cons, production_norm, production = import_data.split_years(5, 17, '2010_2020_SARAH2.csv',
                                                                                 periods=96432, start_time='2010-01-01',
                                                                                 years=[2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019])
-        cons_norm_test, cons_test, production_norm_test, production_test = import_data.split_years(5, 17, 'PV_GIS_2005_2020_TOULOUSE_SARAH2.csv',
-                                                                                periods=140256, start_time='2010-01-01',
-                                                                                years=[2010, 2011, 2012])
+        # cons_norm_test, cons_test, production_norm_test, production_test = import_data.split_years(5, 17, 'PV_GIS_2005_2020_TOULOUSE_SARAH2.csv',
+        #                                                                         periods=140256, start_time='2010-01-01',
+        #                                                                         years=[2010, 2011, 2012])
         manager_test = self.manager
         self.manager.add_data_prod(data_prod=production, data_prod_norm=production_norm)
-        manager_test.add_data_prod(data_prod=production_test, data_prod_norm=production_norm_test)
+        # manager_test.add_data_prod(data_prod=production_test, data_prod_norm=production_norm_test)
         ### Initialisation de l'env, prend 0seconde
         BCQ = main_BCQ(env=env, manager=[self.manager, manager_test], seed=seed, buffer_name=buffer_name, max_timestep=max_timestep,
                        BCQ_threshold=BCQ_threshold, low_noise_p=low_noise_p, rand_action_p=rand_action_p, already_trained=trained_already, battery=self.batt)

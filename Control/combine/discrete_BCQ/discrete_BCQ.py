@@ -92,8 +92,6 @@ class discrete_BCQ(object):
 		# Target update rule
 		self.maybe_update_target = self.polyak_target_update if polyak_target_update else self.copy_target_update
 		self.target_update_frequency = target_update_frequency
-		### AJOUT POUR TEST (DEC 2022):
-		self.target_update_frequency = 20000
 		self.tau = tau
 
 		# Decay for eps
