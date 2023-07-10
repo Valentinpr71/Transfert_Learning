@@ -34,7 +34,7 @@ class main_dim():
         # VP 01/04/2023
         consumption_norm, consumption, production_norm, production = import_data.split_years(5, 17, '2010_2020_SARAH2.csv',
                                                                                 periods=96432, start_time='2010-01-01',
-                                                                                years=[2010, 2011, 2012, 2013])
+                                                                                years=[2010,2011,2012,2013,2014])
         self.manager.add_data_cons(data_cons=consumption, data_cons_norm=consumption_norm)
 
         ### Arguments ne variant pas pour le main BCQ:
@@ -75,7 +75,7 @@ class main_dim():
         #cons_norm, cons, production_norm, production = import_data.treat_csv(dim[0], dim_boundaries['PV']['high'], "clean_PV_GIS_2018_SARAH2.csv")
         cons_norm, cons, production_norm, production = import_data.split_years(5, 17, '2010_2020_SARAH2.csv',
                                                                                 periods=96432, start_time='2010-01-01',
-                                                                                years=[2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019])
+                                                                                years=[2010,2011,2012,2013,2014])
         # cons_norm_test, cons_test, production_norm_test, production_test = import_data.split_years(5, 17, 'PV_GIS_2005_2020_TOULOUSE_SARAH2.csv',
         #                                                                         periods=140256, start_time='2010-01-01',
         #                                                                         years=[2010, 2011, 2012])

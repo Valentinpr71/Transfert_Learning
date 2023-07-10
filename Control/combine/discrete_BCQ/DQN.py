@@ -53,11 +53,11 @@ class DQN(object):
 		optimizer_parameters={},
 		polyak_target_update=False,
 		target_update_frequency=8e3,
-		tau=0.005,
+		tau=0.01,
 		initial_eps = 1,
 		end_eps = 0.001,
 		eps_decay_period = 25e4,
-		eval_eps=0.001,
+		eval_eps=0,
 		writter = None,
 			train_freq= 1
 	):
@@ -138,6 +138,7 @@ class DQN(object):
 	def copy_target_update(self):
 		if self.iterations % self.target_update_frequency == 0:
 			 self.Q_target.load_state_dict(self.Q.state_dict())
+			 print("Q Target updated")
 
 
 	def save(self, filename):

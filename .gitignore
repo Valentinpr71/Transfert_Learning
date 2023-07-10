@@ -520,3 +520,5 @@ fabric.properties
 !*/data/*.npy
 *_Q
 *_optimizer
+
+key*

@@ -23,71 +23,34 @@ class main_BCQ():
 	def __init__(self, env, manager, seed=0, buffer_name="Default", max_timestep=1e6, BCQ_threshold=0.3, low_noise_p=0.1, rand_action_p=0.3, already_trained=0, battery=None):
 		self.writer = SummaryWriter()
 		self.already_trained = already_trained
-		# self.regular_parameters = {
-		# 	# multi_env
-		# 	"nb_parents": 1,
-		# 	"euclidian_dist": 1,
-		# 	# Exploration
-		# 	### Modifié pour l'abaisser dans les épisodes en low noise
-		# 	"start_timesteps": 8760, #nombre de step avant de ne plus prendre que des actions aléatoires
-		# 	"initial_eps": 0.01,
-		# 	"end_eps": 0.1,
-		# 	"eps_decay_period": 1,
-		# 	# Evaluation
-		# 	#"eval_freq": 8759,#Attention c'est en nombre de step et pas en nombre d'épisodes
-		# 	"eval_freq": 8760,
-		# 	"eval_eps": 0.001,
-		# 	# Learning
-		# 	"discount": 0.75,
-		# 	"buffer_size": 1e6,
-		# 	# "batch_size": 64,
-		# 	"batch_size": 256,
-		# 	"optimizer": "Adam",
-		# 	"optimizer_parameters": {
-		# 		"lr": 1e-3
-		# 		# "lr": 3e-4
-		# 	},
-		# 	"train_freq": 1,
-		# 	# "polyak_target_update": False,
-		# 	"polyak_target_update": False,
-		# 	"target_update_freq": 70000,
-		# 	#tau passé de 0.005 à 0.9
-		# 	"tau": 0.005
-		# }
 		self.deg_finale_batt = []
 		##### VP 17/02 : Je retourne sur l'opti après l'étude en mono_objectif
 		self.regular_parameters = {
-			# multi_env
 			"nb_parents": 1,
 			"euclidian_dist": 1,
 			# Exploration
 			### Modifié pour l'abaisser dans les épisodes en low noise
-			"start_timesteps": 8760*3, #nombre de step avant de ne plus prendre que des actions aléatoires
-			"initial_eps": 0.1,
+			"start_timesteps": 8760*5, #nombre de step avant de ne plus prendre que des actions aléatoires
+			"initial_eps": 1,
 			"end_eps": 0.001,
-			# "eps_decay_period": 25e4,
-			"eps_decay_period": 250e4,
+			"eps_decay_period": 63000,
+			# "eps_decay_period": 250e4,
 			# Evaluation
-			#"eval_freq": 8759,#Attention c'est en nombre de step et pas en nombre d'épisodes
-			# "eval_freq": 8760,
-			"eval_freq": 2920,
+			"eval_freq": 32, #Attention c'est en nombre de step et pas en nombre d'épisodes
 			"eval_eps": 0,
 			# Learning
-			"discount": 0.99,
+			"discount": 0.999,
 			"buffer_size": 10e6,
-			# "batch_size": 128,
-			"batch_size": 256,
+			"batch_size": 64,
 			"optimizer": "Adam",
 			"optimizer_parameters": {
-				"lr": 1e-3
-				# "lr": 3e-4
+				"lr": 5e-4
 			},
-			"train_freq": 730,
-			# "polyak_target_update": False,
+			"train_freq": 16,
 			"polyak_target_update": False,
 			"target_update_freq": 100,
 			#tau passé de 0.005 à 0.9
-			"tau": 0.005
+			"tau": 0.001
 		}
 		torch.manual_seed(0)
 
@@ -241,7 +204,7 @@ class main_BCQ():
 					# low_noise_ep = np.random.uniform(0,1) < self.low_noise_p
 
 			# Evaluate episode
-			if self.train_behavioral and (t + 1) % parameters["eval_freq"] == 0:
+			if self.train_behavioral and (t + 1) % parameters["eval_freq"] == 0 and t >= parameters["start_timesteps"]:
 				patience += 1
 				evaluations.append(self.eval_policy(policy0))
 				np.save(f"./tests_optim/results/{setting}", evaluations)
@@ -251,6 +214,7 @@ class main_BCQ():
 					policy0.save(f"./tests_optim/models/{setting}")
 				if patience >= 215*10 or best_eval == 0:
 					np.save('deg_finale_batt', self.deg_finale_batt)
+					print("end of training, patience threshold reached")
 					break
 				# if patience >= 500:# or best_eval == 0:
 				# 	print("Chargement de la meilleure politique après avoir atteint le seuil de patience")

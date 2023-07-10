@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     for i in range(dim_num_iteration):
         print(f"itération {i} de dimensionnement")
-        cheat_dim_list = [np.array([5.,5.]), np.array([4.,4.]),np.array([5.0, 5.0]),np.array([7.0,8.0]),np.array([9.0,5.0])] #Ajouté uniquement dans un but d'analyse de l'algo au début (on force le nb de voisin a etre petit)
+        cheat_dim_list = [np.array([5.,6.]), np.array([5.,5.]),np.array([5.0, 5.0]),np.array([7.0,8.0]),np.array([9.0,5.0])] #Ajouté uniquement dans un but d'analyse de l'algo au début (on force le nb de voisin a etre petit)
         # dim = np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])),
         #                 float(np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))])
         dim = cheat_dim_list[i]

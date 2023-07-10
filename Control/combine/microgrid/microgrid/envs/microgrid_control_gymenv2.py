@@ -33,7 +33,7 @@ class microgrid_control_gym(gym.Env):
         self.plot_every = plot_every
         # State space:
         # self.observation_space = spaces.Box(low=np.array([0., 0., 0., 0.]), high=np.array([1., 1., 1., 1]))
-        self.observation_space = spaces.Box(low=np.array([0., 0., 0., 0., 0., 0.]), high=np.array([1., 1., 1., 1, 1., 1.]))
+        self.observation_space = spaces.Box(low=np.float32(np.array([0., 0., 0., 0., 0., 0.])), high=np.float32(np.array([1., 1., 1., 1, 1., 1.])))
         self.batt=battery
         #nov2022 : Ajout de l'aspect "Date initiale" de la simulation
         dates2 = pd.date_range(date_initiale, periods=total_timesteps, freq='H').values
@@ -180,8 +180,8 @@ class microgrid_control_gym(gym.Env):
             #     self.energy_sold.append(0)
             # self._last_ponctual_observation[0] = min(1., self._last_ponctual_observation[0] - (Energy_needed_from_battery / self.battery_size) * self.battery_eta)
         self.battery_storage.append(self._last_ponctual_observation[0]*self.battery_size)
-        self._last_ponctual_observation[1] = self.consumption_norm[self.counter]
         self._last_ponctual_observation[2] = self.production_norm[self.counter]
+        self._last_ponctual_observation[1] = self.consumption_norm[self.counter]
         self._last_ponctual_observation[3] = self.dist_equinox[self.counter] / 182
         self._last_ponctual_observation[4] = (deg/0.5)
         self._last_ponctual_observation[5] = self.hydrogen_storage[-1]/self.max_H2_stock
