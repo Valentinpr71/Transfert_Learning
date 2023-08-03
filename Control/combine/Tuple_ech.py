@@ -12,7 +12,7 @@ class Interact():
     de les utiliser afin de générer les tuples (s_t,a_t,r_t,s_t+1) qui alimenteront le buffer.
     Pour l'argument de l'agent pré-entraîné, on attend un dictionnaire comprenant le nom des fichiers à récupérer.
     """
-    def __init__(self, manager, log, buffer_size, replay_buffer, low_noise_p=0.04, rand_action_p=0.3, policy=None):
+    def __init__(self, manager, log, buffer_size, replay_buffer, low_noise_p=0.04, rand_action_p=0.3, policy=None, battery=None):
         self.coeff_norm = max((manager.data[0].max()), (manager.data[3].max()))
         self.dim = manager.dim
         self.manager = manager
@@ -20,21 +20,21 @@ class Interact():
         self.agents = manager.parents
         self.buffer_size = buffer_size
         self._get_frac()
-        self.len_episode = 8760
+        self.len_episode = 8760*6
         self.data = manager.data
         self.replay_buffer = replay_buffer
         self.low_noise_p = low_noise_p
         self.rand_action_p = rand_action_p
         self.epsilon = 0.05
         self.policy = policy
-
+        self.batt = battery
     def _Action_rule_based(self, epsilon):#, seed=0):
         Action_rule_based = pd.DataFrame(rule_based_actions(dim=self.dim, data = self.data, epsilon=epsilon))#, seed=seed))
          #À déplacer, on ne veut pas dupiquer les actions x fois mais directement les tuples
         return(Action_rule_based)
 
     def _Action_random(self):
-        Action_random = pd.DataFrame(np.random.randint(3,size=(8759, int(self.buffer_size*self.frac_random))))
+        Action_random = pd.DataFrame(np.random.randint(3,size=(self.len_episode-1, int(self.buffer_size*self.frac_random))))
         return(Action_random)
 
     def _get_frac(self):
@@ -114,7 +114,7 @@ class Interact():
 
 
     def get_tuples_pretrain(self, nb_episodes_per_agent = 0):
-        tuples = Pretrain(self.agents,data=self.data, low_noise_p=self.low_noise_p, rand_action_p=self.rand_action_p, replay_buffer=self.replay_buffer, policy=self.policy)
+        tuples = Pretrain(self.agents,data=self.data, low_noise_p=self.low_noise_p, rand_action_p=self.rand_action_p, replay_buffer=self.replay_buffer, policy=self.policy, manager=self.manager, battery=self.batt)
         self.self_dim = self.dim
         tuples.dim = self.self_dim
         replay_buffer = tuples.iterate_parents(nb_episodes_per_agent=nb_episodes_per_agent,epsilon=self.epsilon)

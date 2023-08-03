@@ -20,11 +20,11 @@ from taux_mensuels import taux_mensuels
 
 
 # simulated annealing algorithm
-def simulated_annealing(objective = main_dim(2,1), varbound=np.array([[3, 11], [2, 12]]), n_iterations=1, stepsize=np.array([3,3]), temp=10):
+def simulated_annealing(objective = main_dim(2,1), varbound=np.array([[3, 11], [2, 12]]), n_iterations=10, stepsize=np.array([3,3]), temp=10):
     #The temperature has been taken as the opposite of the DQN agent score for test environment in [10,10] PV/batt sizing (we will try to minimize the opposite of the penalty here)
     taux_autoprod, taux_autocons = [], []
     # generate an initial point
-    best = [5,5]#(np.random.rand(len(varbound))*(varbound[:,1]-varbound[:,0])+varbound[:,0]).astype(int)
+    best = [4,4]#(np.random.rand(len(varbound))*(varbound[:,1]-varbound[:,0])+varbound[:,0]).astype(int)
     # best = (np.random.rand(len(varbound))*(varbound[:,1]-varbound[:,0])+varbound[:,0]).astype(int)
     # evaluate the initial point
     best_eval, candidate_score, tau_autoprod, tau_autocons = objective.iterations_dim(best[0], best[1])
@@ -62,6 +62,13 @@ def simulated_annealing(objective = main_dim(2,1), varbound=np.array([[3, 11], [
             #     #Si le dimensionnement batt du candidat est au dessus de des bornes, on pénalise
             #     candidate_eval_pen += candidate_eval * (candidate[1]-max(range(varbound[1][0], varbound[1][1])))
             # candidate_eval = candidate_eval_pen
+        #### Aout 2023 -- A SUPPRIMER DES QUE LES TESTS SONT FAITS
+        candidate_list = [np.array([4.,3.]), np.array([3.,4.]),np.array([3., 4.]),np.array([7.0,8.0]),np.array([9.0,5.0])] #Ajouté uniquement dans un but d'analyse de l'algo au début (on force le nb de voisin a etre petit)
+        # dim = np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])),
+        #                 float(np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))])
+        candidate = candidate_list[i]
+        ####
+
         list_candidate.append(candidate)
         candidate_eval, candidate_score, tau_autoprod, tau_autocons = objective.iterations_dim(candidate[0], candidate[1])
         taux_autoprod.append(tau_autoprod)

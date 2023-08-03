@@ -1,6 +1,7 @@
 import gym
 import pandas as pd
 import numpy as np
+from discrete_BCQ import utils
 import time
 import glob
 
@@ -14,7 +15,7 @@ class Pretrain():
     - dicto : dictionnaire numéroté contenant le nom des fichiers contenant les agents entraînés. AUTRE MANIÈRE plus intéressante: la clé est le hashkey et la valeur le dimensionnement. le dimensionnement doit être un np.array
     - dim : dimension de l'environnement sur lequel les predictions doivent être faites. De la forme d'une liste de flottants
     """
-    def __init__(self, dicto = None, replay_buffer=None, data=[], low_noise_p=0.01, rand_action_p=0.3, policy = None):
+    def __init__(self, dicto = None, replay_buffer=None, data=[], low_noise_p=0.01, rand_action_p=0.3, policy = None, manager=None, battery=None):
         self.coeff_norm = max((data[0].max()), (data[3].max()))
         self.dicto=dicto
         self.dim=None
@@ -25,10 +26,14 @@ class Pretrain():
         self.rand_action_p = rand_action_p
         self.policy0 = policy[0]
         self.policy1 = policy[1]
+        self.manager = manager
+        self.batt = battery
 
     def _load_agent(self,filename):
         setting = f"MicrogridControlGym-v0_"+filename
-        self.env = gym.make("MicrogridControlGym-v0", dim=self.dim, data=self.data)
+        # self.env = gym.make("MicrogridControlGym-v0", dim=self.dim, data=self.data)
+        self.env = gym.make("MicrogridControlGym-v0", dim=self.manager.dim, data=self.manager.data, battery=self.batt)
+        # self.env, _, _ = utils.make_env(self.env, manager=self.manager, battery=self.batt)
         ## modifs pour intégrer pytorch au load de l'agent pour faire comme avec le train_behavioral de BCQ
         #Noel : Ajout du prefixe tests_optim pour tester l'algorithme d'optimisation.
         self.policy.load(f"./tests_optim/models/{setting}")

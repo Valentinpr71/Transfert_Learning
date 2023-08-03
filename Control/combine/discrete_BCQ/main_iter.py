@@ -30,23 +30,23 @@ class main_BCQ():
 			"euclidian_dist": 1,
 			# Exploration
 			### Modifié pour l'abaisser dans les épisodes en low noise
-			"start_timesteps": 8760*5, #nombre de step avant de ne plus prendre que des actions aléatoires
-			"initial_eps": 1,
+			"start_timesteps": 8760*6, #nombre de step avant de ne plus prendre que des actions aléatoires
+			"initial_eps": 0.1,
 			"end_eps": 0.001,
-			"eps_decay_period": 63000,
+			"eps_decay_period": 250e4,
 			# "eps_decay_period": 250e4,
 			# Evaluation
-			"eval_freq": 32, #Attention c'est en nombre de step et pas en nombre d'épisodes
+			"eval_freq": 4, #Attention c'est en nombre de step et pas en nombre d'épisodes
 			"eval_eps": 0,
 			# Learning
 			"discount": 0.999,
-			"buffer_size": 10e6,
+			"buffer_size": 6e6,
 			"batch_size": 64,
 			"optimizer": "Adam",
 			"optimizer_parameters": {
-				"lr": 5e-4
+				"lr": 1e-3
 			},
-			"train_freq": 16,
+			"train_freq": 4,
 			"polyak_target_update": False,
 			"target_update_freq": 100,
 			#tau passé de 0.005 à 0.9
@@ -212,7 +212,7 @@ class main_BCQ():
 					patience = 0
 					best_eval = evaluations[-1]
 					policy0.save(f"./tests_optim/models/{setting}")
-				if patience >= 215*10 or best_eval == 0:
+				if patience >= 1500 or best_eval == 0:
 					np.save('deg_finale_batt', self.deg_finale_batt)
 					print("end of training, patience threshold reached")
 					break
@@ -326,7 +326,7 @@ class main_BCQ():
 
 
 
-	def Iterate(self, temps):
+	def Iterate(self, temps, scoretype):
 		# np.random.seed(seed=int(time.time()))
 
 		len_episode = 8760
@@ -366,7 +366,12 @@ class main_BCQ():
 			score = np.sum(rewards)
 			tab = env.render_to_file()
 			## VP mars 23:
-			score = sum(tab['Energy Bought'])-(sum(tab['Energy Sold'])*0.25)
+			if scoretype == 'self-production':
+				score = sum(tab['Energy Bought'])
+			elif scoretype == 'both':
+				score = sum(tab['Energy Bought'])+(sum(tab['Energy Sold']))
+			elif scoretype == 'economic':
+				score = sum(tab['Energy Bought']) - (sum(tab['Energy Sold']) * 0.25)
 			grp = tab.groupby(tab.index.month)
 			for i in range(len(grp)):
 				tau_autoprod.append(
@@ -406,7 +411,12 @@ class main_BCQ():
 			score = np.sum(rewards)
 			tab = env.render_to_file()
 			## VP mars 23:
-			score = sum(tab['Energy Bought'])-(sum(tab['Energy Sold'])*0.25)
+			if scoretype == 'self-production':
+				score = sum(tab['Energy Bought'])
+			elif scoretype == 'both':
+				score = sum(tab['Energy Bought'])+(sum(tab['Energy Sold']))
+			elif scoretype == 'economic':
+				score = sum(tab['Energy Bought']) - (sum(tab['Energy Sold']) * 0.25)
 			grp = tab.groupby(tab.index.month)
 			for i in range(len(grp)):
 				tau_autoprod.append(
@@ -479,7 +489,7 @@ class main_BCQ():
 			self.generate_buffer = True
 			print("generate_buffer",self.generate_buffer,"train_behavioral", self.train_behavioral)
 			#replay_buffer = utils.ReplayBuffer(self.state_dim, self.regular_parameters["batch_size"], self.regular_parameters["buffer_size"], device)
-			self.INTER = Interact(self.manager, log=1, buffer_size=self.regular_parameters["buffer_size"], replay_buffer=replay_buffer, low_noise_p=self.low_noise_p, rand_action_p=self.rand_action_p)
+			self.INTER = Interact(self.manager, log=1, buffer_size=self.regular_parameters["buffer_size"], replay_buffer=replay_buffer, low_noise_p=self.low_noise_p, rand_action_p=self.rand_action_p, battery=self.batt)
 			print("INTERACT TO GENERATE BUFFER NOW")
 			self.interact_with_environment(env, replay_buffer, False, device, inter=self.INTER)
 			print("TRAIN BCQ NOW")
