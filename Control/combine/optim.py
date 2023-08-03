@@ -62,12 +62,7 @@ def simulated_annealing(objective = main_dim(2,1), varbound=np.array([[3, 11], [
             #     #Si le dimensionnement batt du candidat est au dessus de des bornes, on pénalise
             #     candidate_eval_pen += candidate_eval * (candidate[1]-max(range(varbound[1][0], varbound[1][1])))
             # candidate_eval = candidate_eval_pen
-        #### Aout 2023 -- A SUPPRIMER DES QUE LES TESTS SONT FAITS
-        candidate_list = [np.array([4.,3.]), np.array([3.,4.]),np.array([3., 4.]),np.array([7.0,8.0]),np.array([9.0,5.0])] #Ajouté uniquement dans un but d'analyse de l'algo au début (on force le nb de voisin a etre petit)
-        # dim = np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])),
-        #                 float(np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))])
-        candidate = candidate_list[i]
-        ####
+
 
         list_candidate.append(candidate)
         candidate_eval, candidate_score, tau_autoprod, tau_autocons = objective.iterations_dim(candidate[0], candidate[1])
