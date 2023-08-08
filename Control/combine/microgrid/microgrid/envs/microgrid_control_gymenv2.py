@@ -147,6 +147,7 @@ class microgrid_control_gym(gym.Env):
             self._last_ponctual_observation[0], energy_sold, deg = self.batt.charge(Energy_needed_from_battery)
             reward -= (deg - (self._last_ponctual_observation[4] * 0.5))*1000000
             self.energy_sold.append(energy_sold)
+            reward -= energy_sold
             # if min(1., self._last_ponctual_observation[0] - (
             #         Energy_needed_from_battery / self.battery_size) * self.battery_eta) == 1. and self.sell_to_grid:
             #     # If the battery is full and there is a surplus of energy, sell it to the grid at 0.5€ per kW. As the (mean of production is 1.5 kW), we define self.ppc_power_constraint as the PCC threshold
