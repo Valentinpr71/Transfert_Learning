@@ -139,7 +139,7 @@ class main_BCQ():
 		episode_timesteps = 0
 		episode_num = 0
 		low_noise_ep = np.random.uniform(0,1) < self.low_noise_p
-		best_eval = -1e7
+		best_eval = -1e9
 		if inter == None:
 			pass
 		else:
