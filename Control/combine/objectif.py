@@ -48,8 +48,8 @@ class main_dim():
         temps = {"behavioral":np.array([]),"bcq":np.array([])}
 
         dim = np.array([float(dimPV), float(dimbatt)])
-        price_PV = 2600*dim[0]/20 ##-->230€/kWc Pour 6kWc 15500€ 80% de la puissance produite à 25 ans. On imagine une durée à 100% grossièrement à 20 ans https://www.hellowatt.fr/panneaux-solaires-photovoltaiques/combien-coute-installation-photovoltaique
-        price_batt = 600*dim[1]/8 #--> 75€/kWh ## 6*100€/kWh https://www.powertechsystems.eu/fr/home/technique/etude-de-cout-du-lithium-ion-vs-batteries-au-plomb/ POUR 8 ans (3000 cycles)
+        price_PV = 1100*dim[0] ##-->230€/kWc Pour 6kWc 15500€ 80% de la puissance produite à 25 ans. On imagine une durée à 100% grossièrement à 20 ans https://www.hellowatt.fr/panneaux-solaires-photovoltaiques/combien-coute-installation-photovoltaique
+        price_batt = 470*dim[1] #--> 75€/kWh ## 6*100€/kWh https://www.powertechsystems.eu/fr/home/technique/etude-de-cout-du-lithium-ion-vs-batteries-au-plomb/ POUR 8 ans (3000 cycles)
         self.manager._dim(dim.tolist())
         self.manager.choose_parents()
         # Noel 2020, voir commentaire plus bas.
@@ -85,8 +85,9 @@ class main_dim():
         ### Initialisation de l'env, prend 0seconde
         BCQ = main_BCQ(env=env, manager=[self.manager, manager_test], seed=seed, buffer_name=buffer_name, max_timestep=max_timestep,
                        BCQ_threshold=BCQ_threshold, low_noise_p=low_noise_p, rand_action_p=rand_action_p, already_trained=trained_already, battery=self.batt)
-        score, temps, tau_autoprod, tau_autocons = BCQ.Iterate(temps, scoretype = 'self-production')
-        obj = (score*0.2*1e-3) + price_PV + price_batt
+        score, temps, tau_autoprod, tau_autocons, last_Cmax = BCQ.Iterate(temps, scoretype = 'self-production')
+        remplacements = ((dim[1]-last_Cmax)/dim[1])/0.3
+        obj = (score*0.2*1e-3) + price_PV + price_batt(1+remplacements)
         # print("TEMPS DE CALCUL : ", temps)
         return obj, score, tau_autoprod, tau_autocons
         #Noel : On enlève la partie if self.ad_to_dicto car l'agent est déjà entraîné sur la session si on ne l'ajoute pas au dict des dim connus de la session. On peut donc utiliser les already_trained.

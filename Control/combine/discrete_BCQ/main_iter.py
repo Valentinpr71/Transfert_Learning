@@ -4,7 +4,7 @@ import importlib
 import json
 import os
 import time
-
+from microgrid.envs.import_data import Import_data
 import numpy as np
 import torch
 import pandas as pd
@@ -139,7 +139,7 @@ class main_BCQ():
 		episode_timesteps = 0
 		episode_num = 0
 		low_noise_ep = np.random.uniform(0,1) < self.low_noise_p
-		best_eval = -1e7
+		best_eval = -1e9
 		if inter == None:
 			pass
 		else:
@@ -323,8 +323,64 @@ class main_BCQ():
 		print("---------------------------------------")
 		return avg_reward
 
-
-
+	def get_score(self, scoretype=None, policy=None):
+		years = [2005, 2006, 2007, 2008, 2011, 2020, 2010, 2009, 2012, 2016]
+		dim_boundaries = {'PV': {'low': 0, 'high': 17}, 'batt': {'low': 0, 'high': 15}}
+		import_data = Import_data(mode='train')
+		consumption_norm, consumption, production_norm, production = import_data.split_years(5, 17,
+																							 'PV_GIS_2005_2020_TOULOUSE_SARAH2.csv',
+																							 periods=140256,
+																							 start_time='2005-01-01',
+																							 years=years)
+		data = [consumption, consumption_norm, production, production_norm]
+		manager = self.manager
+		manager.data = data
+		env, state_dim, num_action = utils.make_env("MicrogridControlGym-v0", manager, battery=self.batt)
+		list_of_actions = np.array([])
+		rewards = np.array([])
+		obs = env.reset()
+		states = []
+		degra = []
+		SOC = []
+		is_done = False
+		while not is_done:
+			# action = env.action_space.sample()
+			action = policy.select_action(np.array(obs), eval=True)
+			states = np.append(states, obs)
+			degra = np.append(degra, obs[-2])
+			SOC = np.append(SOC, obs[0])
+			obs, reward, is_done, info = env.step(action)
+			rewards = np.append(rewards, reward)
+			list_of_actions = np.append(list_of_actions, action)
+		tab = env.render_to_file()
+		grp = tab.groupby(tab.index.month)
+		tab['list_of_actions'] = list_of_actions
+		tau_autocons = []
+		tau_autoprod = []
+		tab = env.render_to_file()
+		grp = tab.groupby(tab.index.month)
+		action_charge = []
+		action_decharge = []
+		action_R = []
+		prod = []
+		list_of_actions = np.append(list_of_actions, 3)
+		for i in range(len(grp)):
+			prod.append(sum(tab['PV production'][grp.groups[i + 1]]))
+			tau_autoprod.append(
+				1 - (sum(tab['Energy Bought'][grp.groups[i + 1]]) / sum(tab["Consumption"][grp.groups[i + 1]])))
+			tau_autocons.append(
+				1 - (sum(tab['Energy Sold'][grp.groups[i + 1]]) / sum(tab["PV production"][grp.groups[i + 1]])))
+			action_charge.append(len(np.where(tab['list_of_actions'][grp.groups[i + 1]] == 2)[0]))
+			action_decharge.append(len(np.where(tab['list_of_actions'][grp.groups[i + 1]] == 0)[0]))
+			action_R.append(len(np.where(tab['list_of_actions'][grp.groups[i + 1]] == 1)[0]))
+		eval = np.sum(rewards)
+		if scoretype == 'self-production':
+			score = sum(tab['Energy Bought'])
+		elif scoretype == 'both':
+			score = sum(tab['Energy Bought']) + (sum(tab['Energy Sold']))
+		elif scoretype == 'economic':
+			score = sum(tab['Energy Bought']) - (sum(tab['Energy Sold']) * 0.25)
+		return(score, tau_autoprod, tau_autocons, self.batt.C)
 
 	def Iterate(self, temps, scoretype):
 		# np.random.seed(seed=int(time.time()))
@@ -356,28 +412,7 @@ class main_BCQ():
 				parameters['train_freq']
 			)
 			policy.load(f"./tests_optim/models/MicrogridControlGym-v0_{self.manager._create_hashkey()}")
-			rewards = np.array([])
-			obs = env.reset()
-			is_done = False
-			while not is_done:
-				action = policy.select_action(np.array(obs))
-				obs, reward, is_done, info = env.step(action)
-				rewards = np.append(rewards, reward)
-			score = np.sum(rewards)
-			tab = env.render_to_file()
-			## VP mars 23:
-			if scoretype == 'self-production':
-				score = sum(tab['Energy Bought'])
-			elif scoretype == 'both':
-				score = sum(tab['Energy Bought'])+(sum(tab['Energy Sold']))
-			elif scoretype == 'economic':
-				score = sum(tab['Energy Bought']) - (sum(tab['Energy Sold']) * 0.25)
-			grp = tab.groupby(tab.index.month)
-			for i in range(len(grp)):
-				tau_autoprod.append(
-					1 - (sum(tab['Energy Bought'][grp.groups[i + 1]]) / sum(tab["Consumption"][grp.groups[i + 1]])))
-				tau_autocons.append(
-					1 - (sum(tab['Energy Sold'][grp.groups[i + 1]]) / sum(tab["PV production"][grp.groups[i + 1]])))
+			score, tau_autoprod, tau_autocons, last_Cmax = self.get_score(scoretype=scoretype, policy=policy)
 			print('score : ', score)
 			return (score, 0, tau_autoprod, tau_autocons)
 		if self.already_trained == 1:
@@ -401,28 +436,7 @@ class main_BCQ():
 				parameters['train_freq']
 			)
 			policy.load(f"./tests_optim/models/MicrogridControlGym-v0_{self.manager._create_hashkey()}")
-			rewards = np.array([])
-			obs = env.reset()
-			is_done = False
-			while not is_done:
-				action = policy.select_action(np.array(obs))
-				obs, reward, is_done, info = env.step(action)
-				rewards = np.append(rewards, reward)
-			score = np.sum(rewards)
-			tab = env.render_to_file()
-			## VP mars 23:
-			if scoretype == 'self-production':
-				score = sum(tab['Energy Bought'])
-			elif scoretype == 'both':
-				score = sum(tab['Energy Bought'])+(sum(tab['Energy Sold']))
-			elif scoretype == 'economic':
-				score = sum(tab['Energy Bought']) - (sum(tab['Energy Sold']) * 0.25)
-			grp = tab.groupby(tab.index.month)
-			for i in range(len(grp)):
-				tau_autoprod.append(
-					1 - (sum(tab['Energy Bought'][grp.groups[i + 1]]) / sum(tab["Consumption"][grp.groups[i + 1]])))
-				tau_autocons.append(
-					1 - (sum(tab['Energy Sold'][grp.groups[i + 1]]) / sum(tab["PV production"][grp.groups[i + 1]])))
+			score, tau_autoprod, tau_autocons, last_Cmax = self.get_score(scoretype=scoretype, policy=policy)
 			print('score : ', score)
 			return (score, 0, tau_autoprod, tau_autocons)
 		# Initialize buffer
@@ -464,24 +478,8 @@ class main_BCQ():
 				parameters['train_freq']
 			)
 			policy.load(f"./tests_optim/models/MicrogridControlGym-v0_{self.manager._create_hashkey()}")
-			rewards = np.array([])
-			obs = env.reset()
-			is_done = False
-			while not is_done:
-				action = policy.select_action(np.array(obs))
-				obs, reward, is_done, info = env.step(action)
-				rewards = np.append(rewards, reward)
-			tab = env.render_to_file()
-			grp = tab.groupby(tab.index.month)
-			for i in range(len(grp)):
-				tau_autoprod.append(
-					1 - (sum(tab['Energy Bought'][grp.groups[i + 1]]) / sum(tab["Consumption"][grp.groups[i + 1]])))
-				tau_autocons.append(
-					1 - (sum(tab['Energy Sold'][grp.groups[i + 1]]) / sum(tab["PV production"][grp.groups[i + 1]])))
-			score = np.sum(rewards)
-			## VP mars 23:
+			score, tau_autoprod, tau_autocons, last_Cmax = self.get_score(scoretype=scoretype, policy=policy)
 			print('score : ', score)
-			score = sum(tab['Energy Bought'])-(sum(tab['Energy Sold'])*0.25)
 		else:
 			# else, use buffers to train off-line
 			start = time.time()
@@ -517,23 +515,7 @@ class main_BCQ():
 				parameters['train_freq']
 			)
 			policy.load(f"./tests_optim/models/MicrogridControlGym-v0_{self.manager._create_hashkey()}")
-			rewards = np.array([])
-			obs = env.reset()
-			is_done = False
-			while not is_done:
-				action = policy.select_action(np.array(obs))
-				obs, reward, is_done, info = env.step(action)
-				rewards = np.append(rewards, reward)
-			tab = env.render_to_file()
-			grp = tab.groupby(tab.index.month)
-			for i in range(len(grp)):
-				tau_autoprod.append(
-					1 - (sum(tab['Energy Bought'][grp.groups[i + 1]]) / sum(tab["Consumption"][grp.groups[i + 1]])))
-				tau_autocons.append(
-					1 - (sum(tab['Energy Sold'][grp.groups[i + 1]]) / sum(tab["PV production"][grp.groups[i + 1]])))
-			score = np.sum(rewards)
-			## VP mars 23:
-			score = sum(tab['Energy Bought'])-(sum(tab['Energy Sold'])*0.25)
+			score, tau_autoprod, tau_autocons, last_Cmax = self.get_score(scoretype=scoretype, policy=policy)
 			print('score : ', score)
 		return(score, temps, tau_autoprod, tau_autocons)
 	# # Set seeds
