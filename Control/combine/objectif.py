@@ -87,7 +87,7 @@ class main_dim():
                        BCQ_threshold=BCQ_threshold, low_noise_p=low_noise_p, rand_action_p=rand_action_p, already_trained=trained_already, battery=self.batt)
         score, temps, tau_autoprod, tau_autocons, last_Cmax = BCQ.Iterate(temps, scoretype = 'self-production')
         remplacements = ((dim[1]-last_Cmax)/dim[1])/0.3
-        obj = (score*0.2*1e-3) + price_PV + price_batt(1+remplacements)
+        obj = (score*0.2*1e-3) + price_PV + price_batt*(1+remplacements)
         # print("TEMPS DE CALCUL : ", temps)
         return obj, score, tau_autoprod, tau_autocons
         #Noel : On enlève la partie if self.ad_to_dicto car l'agent est déjà entraîné sur la session si on ne l'ajoute pas au dict des dim connus de la session. On peut donc utiliser les already_trained.

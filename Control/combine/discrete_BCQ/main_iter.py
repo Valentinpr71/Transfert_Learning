@@ -240,7 +240,7 @@ class main_BCQ():
 
 	# Trains BCQ offline
 	def train_BCQ(self, replay_buffer, is_atari, device):
-		best_eval = -1e7
+		best_eval = -1e9
 		# For saving files
 		setting = f"{self.env}_{list(self.manager.dicto.keys())[-1]}"
 		# setting = f"{self.env}_{self.seed}"
@@ -354,25 +354,26 @@ class main_BCQ():
 			list_of_actions = np.append(list_of_actions, action)
 		tab = env.render_to_file()
 		grp = tab.groupby(tab.index.month)
+		list_of_actions=np.append(list_of_actions, 3)
 		tab['list_of_actions'] = list_of_actions
 		tau_autocons = []
 		tau_autoprod = []
 		tab = env.render_to_file()
 		grp = tab.groupby(tab.index.month)
-		action_charge = []
-		action_decharge = []
-		action_R = []
+		# action_charge = []
+		# action_decharge = []
+		# action_R = []
 		prod = []
-		list_of_actions = np.append(list_of_actions, 3)
+		# list_of_actions = np.append(list_of_actions, 3)
 		for i in range(len(grp)):
 			prod.append(sum(tab['PV production'][grp.groups[i + 1]]))
 			tau_autoprod.append(
 				1 - (sum(tab['Energy Bought'][grp.groups[i + 1]]) / sum(tab["Consumption"][grp.groups[i + 1]])))
 			tau_autocons.append(
 				1 - (sum(tab['Energy Sold'][grp.groups[i + 1]]) / sum(tab["PV production"][grp.groups[i + 1]])))
-			action_charge.append(len(np.where(tab['list_of_actions'][grp.groups[i + 1]] == 2)[0]))
-			action_decharge.append(len(np.where(tab['list_of_actions'][grp.groups[i + 1]] == 0)[0]))
-			action_R.append(len(np.where(tab['list_of_actions'][grp.groups[i + 1]] == 1)[0]))
+			# action_charge.append(len(np.where(tab['list_of_actions'][grp.groups[i + 1]] == 2)[0]))
+			# action_decharge.append(len(np.where(tab['list_of_actions'][grp.groups[i + 1]] == 0)[0]))
+			# action_R.append(len(np.where(tab['list_of_actions'][grp.groups[i + 1]] == 1)[0]))
 		eval = np.sum(rewards)
 		if scoretype == 'self-production':
 			score = sum(tab['Energy Bought'])
@@ -414,7 +415,7 @@ class main_BCQ():
 			policy.load(f"./tests_optim/models/MicrogridControlGym-v0_{self.manager._create_hashkey()}")
 			score, tau_autoprod, tau_autocons, last_Cmax = self.get_score(scoretype=scoretype, policy=policy)
 			print('score : ', score)
-			return (score, 0, tau_autoprod, tau_autocons)
+			return (score, 0, tau_autoprod, tau_autocons, last_Cmax)
 		if self.already_trained == 1:
 			parameters = self.regular_parameters
 			policy = DQN.DQN(
@@ -438,7 +439,7 @@ class main_BCQ():
 			policy.load(f"./tests_optim/models/MicrogridControlGym-v0_{self.manager._create_hashkey()}")
 			score, tau_autoprod, tau_autocons, last_Cmax = self.get_score(scoretype=scoretype, policy=policy)
 			print('score : ', score)
-			return (score, 0, tau_autoprod, tau_autocons)
+			return (score, 0, tau_autoprod, tau_autocons, last_Cmax)
 		# Initialize buffer
 		replay_buffer = utils.ReplayBuffer(self.state_dim, self.regular_parameters["batch_size"], self.regular_parameters["buffer_size"], device)
 		# args = pd.DataFrame(
@@ -517,7 +518,7 @@ class main_BCQ():
 			policy.load(f"./tests_optim/models/MicrogridControlGym-v0_{self.manager._create_hashkey()}")
 			score, tau_autoprod, tau_autocons, last_Cmax = self.get_score(scoretype=scoretype, policy=policy)
 			print('score : ', score)
-		return(score, temps, tau_autoprod, tau_autocons)
+		return(score, temps, tau_autoprod, tau_autocons, last_Cmax)
 	# # Set seeds
 	# env.seed(self.seed)
 	# env.action_space.seed(self.seed)
