@@ -380,7 +380,7 @@ class main_BCQ():
 		elif scoretype == 'both':
 			score = sum(tab['Energy Bought']) + (sum(tab['Energy Sold']))
 		elif scoretype == 'economic':
-			score = sum(tab['Energy Bought']) - (sum(tab['Energy Sold']) * 0.25)
+			score = sum(tab['Energy Bought']) - (sum(tab['Energy Sold']*0.6))
 		return(score, tau_autoprod, tau_autocons, self.batt.C)
 
 	def Iterate(self, temps, scoretype):

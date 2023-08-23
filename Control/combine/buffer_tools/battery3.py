@@ -12,6 +12,8 @@ class Battery():
             self.deg=lambda x,y: 0
         else:
             print("Error: Unknown battery type")
+        self.SOC_ini = 1.
+        self.SOC = self.SOC_ini
         self.Cmax = dim*1000
         self.eta = eta
         self.C = self.Cmax #Capacité max de la batterie après dégradation
@@ -19,12 +21,6 @@ class Battery():
         self.B = 2.38 * 10 ** (-5)
         self.cycle_perte = 0.000066667/2 # Perte par cycle en pourcentage de Cmax
         self.histo_Cbatt = [] #Historique de capacité pour mesure l'évolution de la dégradation
-        self.SOCmin=0.3
-        # self.SOCmin=0
-        self.SOCmax=0.8
-        # self.SOCmax=1
-        self.SOC_ini = self.SOCmax
-        self.SOC = self.SOC_ini
 
     def deg_function(self, x):
         return (self.A*x**2)+self.B*x
@@ -35,7 +31,7 @@ class Battery():
 
         # if min(self.SOC*self.C, self.SOC-(delta/self.C)*self.eta)==self.SOC*self.C:# Ne fonctionne pas car la première partie est bien supérieure à 1 et la seconde proche de 1
         # if min(self.C/self.Cmax, self.SOC-(delta/self.Cmax)*self.eta)==self.C/self.Cmax:
-        if min(self.SOCmax, self.SOC-(delta/self.C)*self.eta)==self.SOCmax:
+        if min(1., self.SOC-(delta/self.C)*self.eta)==1.:
             #Excess energy considering maximum capacity with degradation of the battery
             # energy_sold = -delta-(1.*self.C-((self.SOC*self.Cmax)/self.eta))
             energy_sold = min(-delta - (self.C - (self.SOC * self.C)),-delta)
@@ -44,7 +40,7 @@ class Battery():
             energy_sold = 0
         # self.SOC = min(self.C / self.Cmax, self.SOC - ((delta / self.Cmax) * self.eta))
         ### Tentative de train avec le SOC calculé en fonction de C et non Cmax:
-        self.SOC = min(self.SOCmax, self.SOC - ((delta / self.C) * self.eta))
+        self.SOC = min(1., self.SOC - ((delta / self.C) * self.eta))
         self.C = self.C - self.C * self.deg(DOD, (1 - self.SOC))
         self.histo_Cbatt.append(self.C)
 
@@ -52,15 +48,15 @@ class Battery():
 
     def discharge(self, delta):
         DOD = 1-self.SOC
-        if (self.SOC-self.SOCmin)*self.C*self.eta>=delta:
+        if self.SOC*self.C*self.eta>=delta:
         # if self.SOC*self.Cmax*self.eta>=delta:
             #If there is enough stored energy, use it
             self.SOC = self.SOC-delta/(self.C*self.eta)
             energy_bought = 0
         else:
             #else use what is available and buy the remaining energy
-            energy_restored = (self.SOC-self.SOCmin)*self.C*self.eta
-            self.SOC = self.SOCmin
+            energy_restored = self.SOC*self.C*self.eta
+            self.SOC = 0.
             energy_bought = min(delta-energy_restored, delta)
         self.C = self.C - self.C*self.deg(DOD, (1-self.SOC))
         self.histo_Cbatt.append(self.C)

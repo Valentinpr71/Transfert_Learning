@@ -1,7 +1,7 @@
 from discrete_BCQ.main_iter import main_BCQ
 from microgrid.envs.import_data import Import_data
 from buffer_tools.hash_manager import Dim_manager
-from buffer_tools.battery2 import Battery
+from buffer_tools.battery3 import Battery
 import pandas as pd
 import numpy as np
 from os.path import exists
@@ -35,6 +35,8 @@ class main_dim():
         consumption_norm, consumption, production_norm, production = import_data.split_years(5, 17, '2010_2020_SARAH2.csv',
                                                                                 periods=96432, start_time='2010-01-01',
                                                                                 years=[2010,2011,2012,2013,2014,2015])
+        # consumption_norm, consumption, production_norm, production = import_data.split_years2(5, 17, '2010_2020_SARAH2.csv', start_time='2010-01-01',
+        #                                                                         years=[2010,2011,2012,2013,2014,2015])
         self.manager.add_data_cons(data_cons=consumption, data_cons_norm=consumption_norm)
 
         ### Arguments ne variant pas pour le main BCQ:
@@ -76,9 +78,12 @@ class main_dim():
         cons_norm, cons, production_norm, production = import_data.split_years(5, 17, '2010_2020_SARAH2.csv',
                                                                                 periods=96432, start_time='2010-01-01',
                                                                                 years=[2010,2011,2012,2013,2014,2015])
+        # cons_norm, cons, production_norm, production = import_data.split_years2(5, 17, '2010_2020_SARAH2.csv',
+        #                                                                         start_time='2010-01-01',
+        #                                                                         years=[2010,2011,2012,2013,2014,2015])
         # cons_norm_test, cons_test, production_norm_test, production_test = import_data.split_years(5, 17, 'PV_GIS_2005_2020_TOULOUSE_SARAH2.csv',
         #                                                                         periods=140256, start_time='2010-01-01',
-        #                                                                         years=[2010, 2011, 2012])
+        #                                                                         years=[2010, 2011, 2012, 2013, 2014, 2015])
         manager_test = self.manager
         self.manager.add_data_prod(data_prod=production, data_prod_norm=production_norm)
         # manager_test.add_data_prod(data_prod=production_test, data_prod_norm=production_norm_test)
@@ -86,8 +91,9 @@ class main_dim():
         BCQ = main_BCQ(env=env, manager=[self.manager, manager_test], seed=seed, buffer_name=buffer_name, max_timestep=max_timestep,
                        BCQ_threshold=BCQ_threshold, low_noise_p=low_noise_p, rand_action_p=rand_action_p, already_trained=trained_already, battery=self.batt)
         score, temps, tau_autoprod, tau_autocons, last_Cmax = BCQ.Iterate(temps, scoretype = 'self-production')
-        remplacements = ((dim[1]-last_Cmax)/dim[1])/0.3
-        obj = (score*0.2*1e-3) + price_PV + price_batt*(1+remplacements)
+        remplacements = (last_Cmax*1e-3/dim[1]*0.3)
+        # remplacements = ((dim[1]-last_Cmax)/dim[1])/0.3
+        obj = (score*0.22*1e-3) + price_PV + price_batt*(1+remplacements)
         # print("TEMPS DE CALCUL : ", temps)
         return obj, score, tau_autoprod, tau_autocons
         #Noel : On enlève la partie if self.ad_to_dicto car l'agent est déjà entraîné sur la session si on ne l'ajoute pas au dict des dim connus de la session. On peut donc utiliser les already_trained.

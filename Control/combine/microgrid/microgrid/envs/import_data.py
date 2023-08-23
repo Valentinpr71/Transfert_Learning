@@ -86,6 +86,57 @@ class Import_data():
         for i in years[1:]:
             a = pd.concat([a, data.loc[data.index.year == i]])
         a["ProdPV"]*=dimPV
+        # a.Consumption *=2
         consumption_norm = a.Consumption / a.Consumption.max()
         production_norm = a.ProdPV / (a.ProdPV * dimPVmax).max()
         return consumption_norm, a.Consumption, production_norm, a.ProdPV
+
+    def split_years2(self, dimPV, dimPVmax, filename, start_time='2022-01-01', years=[2020]):
+        data = self.clean_data_prod_PVGISSARAH2_2(filename, start_time)
+
+        start_month_day = pd.to_datetime(start_time).strftime('%m-%d')
+
+        dfs = []
+        for year in years:
+            start_date = pd.to_datetime(f'{year}-{start_month_day}')
+            end_date = start_date + pd.DateOffset(years=1)
+            df_year = data.loc[start_date:end_date]
+            dfs.append(df_year)
+
+        a = pd.concat(dfs)
+        a.loc[:, "ProdPV"] *= dimPV
+        # a.Consumption *= 2
+        consumption_norm = a.Consumption / a.Consumption.max()
+        production_norm = a.ProdPV / (a.ProdPV * dimPVmax).max()
+
+        return consumption_norm, a.Consumption, production_norm, a.ProdPV
+
+    def clean_data_prod_PVGISSARAH2_2(self, filename, start_time='2022-01-01'):
+        data_1kW = pd.read_csv(f"data/{filename}")
+        cons = pd.read_csv("data/Nouvelletude_autoconso.csv")
+        # cons = pd.read_csv("data/Demo_autoconso2.csv")
+        data_1kW['time'] = pd.to_datetime(data_1kW['time'], format='%Y%m%d:%H%M')
+        data_1kW.set_index('time', inplace=True)
+        start = data_1kW.index[0]
+
+        # Créer un DataFrame avec toutes les dates à partir de 2000
+        start = data_1kW.index[0]
+        all_dates = pd.date_range(start=start, periods=len(data_1kW), freq='H')
+        # all_dates = pd.date_range(start='2010-01-01', periods=len(data_1kW), freq='H')
+        data_1kW['Dates'] = all_dates
+
+        # Éliminer le 29 février des années bissextiles
+        data_1kW = data_1kW[~((data_1kW["Dates"].dt.month == 2) & (data_1kW["Dates"].dt.day == 29))]
+
+        # Réindexer pour correspondre aux nouvelles dates
+        data_1kW.set_index(data_1kW['Dates'], inplace=True)
+
+        # Étirer les données de consommation pour correspondre à la longueur des données de production
+        cons = pd.concat([cons] * int(len(data_1kW) / len(cons)), ignore_index=True)
+        cons.set_index(data_1kW.index, inplace=True)
+
+        data_1kW["Consumption"] = cons["Consumption"]
+        data_1kW['ProdPV'] = data_1kW['P']
+        data = data_1kW[["ProdPV", "Consumption"]]
+
+        return data
