@@ -39,7 +39,7 @@ Control/combine/python_console_debug
 Control/combine/rendeer.csv
 Control/combine/terminal_for_random
 Control/combine/test.csv
-Control/combine/
+Control/agents/
 
 # Distribution / packaging
 .Python
