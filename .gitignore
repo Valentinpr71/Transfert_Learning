@@ -10,6 +10,37 @@ Control/combine/runs/*
 # C extensions
 *.so
 
+Rewards for episode 1.png
+Result
+stable_baselines
+policies
+experiment
+helper
+learning_algos
+Callbacks
+base_classes
+render
+tmp
+exec.py
+agent.py
+agent_gym_1.py
+comme_gym_matlab/
+deepq_microgrid_control.zip
+run_microgrid_control.py
+see_data.py
+Control/agent
+Control/BCQ
+Control/combine/tricks
+Control/combine/astuce_console_main_dim.txt
+Control/combine/deepq_microgrid_control.zip
+Control/combine/f0d739eb264f6463e501b8d4ba44870b.zip
+Control/combine/jalon2.py
+Control/combine/python_console_debug
+Control/combine/rendeer.csv
+Control/combine/terminal_for_random
+Control/combine/test.csv
+Control/combine/
+
 # Distribution / packaging
 .Python
 build/

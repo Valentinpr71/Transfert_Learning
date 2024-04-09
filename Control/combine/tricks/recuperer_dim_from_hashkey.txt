@@ -1,6 +1,0 @@
-for i in range(12):
-     for j in range(15):
-         dim = [float(i+1),float(j+1)]
-         manager._dim(dim)
-         if manager._create_hashkey()=='2df7d0a34f09594bc197b0d7530b78d1':
-             print('i : ', i+1, 'j : ', j+1)
