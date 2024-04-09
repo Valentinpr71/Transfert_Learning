@@ -1,6 +1,11 @@
 # Transfert_Learning
+L'objectif de ce repo est de combiner le dimensionnement et le contrôle d'un micro-réseau électrique. Le script à executer est `/Control/combine/main_dim.py`. 
+Le script importe des objets pour construire la modélisation du micro-réseau électrique. Le micro-réseau modélisé est constitué de panneaux photovoltaïques, d'une batterie LiFePO4, d'un stockage hydrogène (électrolyseuer/PAC) et d'un point de demande. Une optimisation du dimensionnement est lancée en itérant sur les valeurs de la puissance crête installée pour les panneaux PV et de la capacité de la batterie. L'optimisation minimise le coût économique du système décomposé en coût d'investissement (+maintenance) et coût d'opération (+ usure). Les coûts d'opération dépendent du pilotage du système de stockage, effectué par apprentissage par renforcement. Il est donc très fortement non-linéaire par rapport à la fonction objectif.
 
-Bienvenue dans ce git construit pour essayer de transferer des politiques d'un agent de contrôle à l'autre. Le but est de passer d'un dimensionnement de microgrid à un autre en minimisant le temps d'entraînement de l'agent avant la convergence de sa politique.
+Un algorithme de recuit simulé est utilisé pour explorer l'espace des solutions. Pour chaque itération d'opitmisation, un dimensionnement candidat est généré et un apprentissage a lieu. L'apprentissage demandant des ressources conséquentes, le but ici est de parvenir à ré-utiliser l'entraînement d'agents issus d'itérations précédentes pour ne pas initialiser l'entraînement de l'agent associé au contrôle de l'EMS sur le dimensionnement en cours de manière aléatoire. Un agent sert de démonstrateur, et déploie sa politique sur le dimensionnement de l'itération en cours, tandis que l'agent apprenant met à jour sa politique décisionnelle de manière hors-ligne, avec l'observation de la politique apprise. C'est le *Transfert de Politique*.
+
+Le but est de passer d'un dimensionnement de microgrid à un autre en minimisant le temps d'entraînement de l'agent avant la convergence de sa politique. L'apprentissage sans transfert de politique se fait avec l'algorithme de Deep Q-Learning. Lorsqu'un dimensionnement est "voisin", soit proche d'un micro-réseau déjà itéré dans le processus de dimensionnement, l'entraînement est effectué de manière hors-ligne avec l'algorithme de *Batch Constrained Q-learning*. 
+
 
 ### BCQ :
 

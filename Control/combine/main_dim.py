@@ -32,10 +32,10 @@ if __name__ == "__main__":
 
     for i in range(dim_num_iteration):
         print(f"itération {i} de dimensionnement")
-        cheat_dim_list = [np.array([4.,4.]), np.array([3.,3.]),np.array([3.0, 4.0]),np.array([7.0,8.0]),np.array([9.0,5.0])] #Ajouté uniquement dans un but d'analyse de l'algo au début (on force le nb de voisin a etre petit)
-        # dim = np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])),
-        #                 float(np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))])
+        cheat_dim_list = [np.array([4.,4.]), np.array([3.,3.]),np.array([3.0, 4.0]),np.array([7.0,8.0]),np.array([9.0,5.0])] #Ajouté uniquement dans un but d'analyse de l'algo, utiliser le dimensionnement commenté à la place autrement
         dim = cheat_dim_list[i]
+                # dim = np.array([float(np.random.randint(dim_boundaries['PV']['low'], dim_boundaries['PV']['high'])),
+        #                 float(np.random.randint(dim_boundaries['batt']['low'], dim_boundaries['batt']['high']))])
         manager._dim(dim.tolist())
         manager.choose_parents()
 
